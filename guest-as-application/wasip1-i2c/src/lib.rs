@@ -1,7 +1,7 @@
 #![no_std]
 
 pub mod i2c {
-    //use core::sync::atomic::{ AtomicU32 };
+    use core::mem::MaybeUninit;
     use alloc::vec::Vec;
     extern crate alloc;
     pub type I2cAddress = u16;
@@ -9,7 +9,7 @@ pub mod i2c {
 
     #[link(wasm_import_module = "host")]
     unsafe extern "C" {
-        #[link_name = "read"]
+        #[link_name = "host_read"]
         unsafe fn host_read(_: I2cHandle, _: I2cAddress, _: u64, _: *mut u8) -> u8;
     }
 
@@ -23,17 +23,22 @@ pub mod i2c {
 
     impl NoAcknowledgeSource {
         pub unsafe fn lift(val: u8) -> NoAcknowledgeSource {
-            // TODO: get this out, revert to only unsafe transmute
-            if !cfg!(debug_assertions) {
-                return unsafe { ::core::mem::transmute(val) };
-            }
-
             match val {
                 0 => NoAcknowledgeSource::Address,
                 1 => NoAcknowledgeSource::Data,
-                2 => NoAcknowledgeSource::Unknown,
+                _ => NoAcknowledgeSource::Unknown,
 
-                _ => panic!("invalid enum discriminant"),
+                // TODO: decide on what to do, panic or Unknown no-ack: _ => panic!("invalid enum discriminant"),
+            }
+        }
+
+        pub unsafe fn unlift(self) -> u8 {
+            match self {
+                NoAcknowledgeSource::Address => 0,
+                NoAcknowledgeSource::Data => 1,
+                _ => 2,
+
+                // TODO: decide on what to do, panic or Unknown no-ack: _ => panic!("invalid enum discriminant"),
             }
         }
     }
@@ -55,28 +60,44 @@ pub mod i2c {
         Other,
     }
 
+    // TODO: ErrorCode is nu in totaal 16 bits, maar ik gebruik eigenlijk maar 8 bits, pas ik dit aan zoals de wit-bindgen c code = constante waarde voor iedere errormogelijkheid
+    /* impl ErrorCode {
+        pub fn unlift(self) -> u8 {
+            match self {
+                ErrorCode::NoAcknowledge(source) => {
+                    let no_ack_bits = unsafe { source.unlift() };
+                    (2u8 << 5) | no_ack_bits
+                }
+                _ => ,
+            }
+        }
+    } */
+
     #[repr(transparent)]
     pub struct I2cResource {
         handle: I2cHandle,
     }
 
     impl I2cResource {
+        // TODO: define how handle should be generated or handled
         pub fn new(handle: I2cHandle) -> Self {
             Self { handle: handle }
         }
 
         pub fn read(&self, address: I2cAddress, len: u64) -> Result<Vec<u8>, ErrorCode> {
-            let mut read_buffer = Vec::<u8>::new();
-            read_buffer.resize(len as usize, 0);
-            let ptr = read_buffer.as_mut_ptr();
+            let mut read_buffer: Vec<MaybeUninit<u8>> = Vec::with_capacity(len as usize);
 
-            let host_res = unsafe { host_read(self.handle, address, len, ptr) };
+            let host_res = unsafe {
+                read_buffer.set_len(len as usize);
+                let res = host_read(self.handle, address, len, read_buffer.as_mut_ptr() as *mut u8);
+                core::hint::black_box(res)
+            };
 
-            let error_type = host_res >> 5; // take first 3 bits
-            let error_variant = 31u8 & host_res; // take last 5 bits
+            let error_type = host_res >> 5; // take first 3 bits only
+            let error_variant = 0b000_11111 & host_res; // take last 5 bits only
 
             let final_result = match error_type {
-                0 => Ok(read_buffer),
+                0 => Ok(unsafe { core::mem::transmute(read_buffer) }),
                 1 => Err(ErrorCode::Bus),
                 2 => Err(ErrorCode::ArbitrationLoss),
                 3 =>
