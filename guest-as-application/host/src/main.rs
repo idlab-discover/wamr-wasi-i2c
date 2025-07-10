@@ -19,6 +19,8 @@ enum I2cErrorCode {
     Other = 4,
 }
 
+// extern "C" fn host_open_i2c(exec_env: wasm_exec_env_t) {}
+
 extern "C" fn host_read(
     exec_env: wasm_exec_env_t,
     handle: u32,
@@ -59,7 +61,8 @@ fn main() -> Result<(), RuntimeError> {
         .build()?;
 
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("test.wasm");
+    d.push("wasmodules");
+    d.push("guest.wasm");
     let mut module = Module::from_file(&runtime, d.as_path())?;
 
     let wasi_ctx = WasiCtxBuilder::new().build();

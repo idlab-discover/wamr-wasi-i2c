@@ -32,7 +32,7 @@ pub mod i2c {
             }
         }
 
-        pub unsafe fn unlift(self) -> u8 {
+        pub unsafe fn lower(self) -> u8 {
             match self {
                 NoAcknowledgeSource::Address => 0,
                 NoAcknowledgeSource::Data => 1,

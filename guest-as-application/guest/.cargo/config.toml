@@ -8,5 +8,5 @@ rustflags = [
     "-C",
     "link-arg=--no-entry",
     "-C",
-    "link-arg=--strip-all",
+    "link-arg=--strip-all"
 ]
