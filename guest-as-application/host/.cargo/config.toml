@@ -1,6 +1,9 @@
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
 
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-musl-gcc"
+
 [env]
 LLVM_LIB_CFG_PATH = "/usr/lib/llvm-18/lib/cmake/llvm"
 # WAMR_BUILD_AOT = "0"
