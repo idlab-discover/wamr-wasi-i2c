@@ -7,7 +7,5 @@ edition = "2024"
 lol_alloc = "0.4.1"
 wasip1-i2c = { version = "0.1.0", path = "../wasip1-i2c" }
 
-[[bin]]
-name = "guest"
-path = "src/main.rs"
-harness = false
+[lib]
+crate-type = ["cdylib"]
