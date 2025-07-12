@@ -1,7 +1,8 @@
 #![no_main]
+#![no_std]
 
 use wasip1_i2c::i2c::{ self, ErrorCode };
-/* extern crate alloc;
+extern crate alloc;
 use lol_alloc::{ AssumeSingleThreaded, FreeListAllocator };
 use core::panic::PanicInfo;
 
@@ -14,7 +15,7 @@ static ALLOCATOR: AssumeSingleThreaded<FreeListAllocator> = unsafe {
 fn panic(_info: &PanicInfo) -> ! {
     loop {
     }
-} */
+}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn main() -> u8 {

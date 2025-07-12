@@ -60,7 +60,7 @@ fn main() -> Result<(), RuntimeError> {
         .register_host_function("host_read", host_read as *mut c_void)
         .build()?;
 
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut d = PathBuf::from(".");
     d.push("wasmodules");
     d.push("guest.wasm");
     let mut module = Module::from_file(&runtime, d.as_path())?;
