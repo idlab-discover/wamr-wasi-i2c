@@ -48,6 +48,14 @@ impl I2cManager {
         self.next_handle += 1;
         outp
     }
+
+    fn get_permissions(
+        &self,
+        instance: *const WASMModuleInstanceCommon,
+        handle: u32
+    ) -> Option<&I2cPermissions> {
+        self.instances.get(&instance)?.get(&handle)
+    }
 }
 
 static I2C_MANAGER: LazyLock<Mutex<I2cManager>> = LazyLock::new(|| {
@@ -94,28 +102,47 @@ extern "C" fn host_read(
     buffer_ptr: u32
 ) -> u8 {
     println!("Host: i2c_read called - handle: {}, address: 0x{:04x}, len: {}", handle, addr, len);
-    unsafe {
-        let module_inst = wasm_runtime_get_module_inst(exec_env);
-        if module_inst.is_null() {
-            eprintln!("Host: Failed to get module instance");
-            return I2cErrorCode::Other as u8;
-        }
-
-        let native_buffer = wasm_runtime_addr_app_to_native(
-            module_inst,
-            buffer_ptr as u64
-        ) as *mut u8;
-        if native_buffer.is_null() {
-            eprintln!("Host: Invalid buffer pointer");
-            return I2cErrorCode::Other as u8;
-        }
-
-        let simulated_data = vec![0x11, 0xab, 0xcd]; // decimal: 17,171,205
-
-        std::ptr::copy_nonoverlapping::<u8>(simulated_data.as_ptr(), native_buffer, len as usize);
-        println!("Host: Read completed");
-        0b000_00000
+    let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
+    if module_inst.is_null() {
+        eprintln!("Host: Failed to get module instance");
+        return I2cErrorCode::Other as u8;
     }
+
+    let can_read = {
+        let manager = I2C_MANAGER.lock().unwrap();
+        match manager.get_permissions(module_inst, handle) {
+            Some(permissions) => permissions.can_read,
+            None => {
+                eprintln!(
+                    "Host: Handle {} not found for module instance {:p}",
+                    handle,
+                    module_inst
+                );
+                return I2cErrorCode::Other as u8;
+            }
+        }
+    };
+
+    if !can_read {
+        eprintln!("Host: Access denied - no read permission for handle {}", handle);
+        return I2cErrorCode::Other as u8;
+    }
+
+    let native_buffer = (unsafe {
+        wasm_runtime_addr_app_to_native(module_inst, buffer_ptr as u64)
+    }) as *mut u8;
+    if native_buffer.is_null() {
+        eprintln!("Host: Invalid buffer pointer");
+        return I2cErrorCode::Other as u8;
+    }
+
+    let simulated_data = vec![0x11, 0xab, 0xcd]; // decimal: 17,171,205
+
+    unsafe {
+        std::ptr::copy_nonoverlapping::<u8>(simulated_data.as_ptr(), native_buffer, len as usize);
+    }
+    println!("Host: Read completed");
+    0b000_00000
 }
 
 fn main() -> Result<(), RuntimeError> {
