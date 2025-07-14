@@ -1,10 +1,17 @@
 use std::{ ffi::c_void, path::PathBuf };
+use std::collections::HashMap;
+use std::sync::{ Mutex, LazyLock };
 use wamr_rust_sdk::{
     function::Function,
     instance::Instance,
     module::Module,
     runtime::Runtime,
-    sys::{ wasm_exec_env_t, wasm_runtime_get_module_inst, wasm_runtime_addr_app_to_native },
+    sys::{
+        WASMModuleInstanceCommon,
+        wasm_exec_env_t,
+        wasm_runtime_get_module_inst,
+        wasm_runtime_addr_app_to_native,
+    },
     value::WasmValue,
     wasi_context::WasiCtxBuilder,
     RuntimeError,
@@ -19,7 +26,65 @@ enum I2cErrorCode {
     Other = 4,
 }
 
-// extern "C" fn host_open_i2c(exec_env: wasm_exec_env_t) {}
+#[derive(Clone, Debug)]
+struct I2cPermissions {
+    can_read: bool,
+    can_write: bool,
+    is_whitelisted: bool,
+    addresses: Vec<u16>,
+}
+
+struct I2cManager {
+    instances: HashMap<*const WASMModuleInstanceCommon, HashMap<u32, I2cPermissions>>,
+    next_handle: u32,
+}
+
+unsafe impl Send for I2cManager {}
+unsafe impl Sync for I2cManager {}
+
+impl I2cManager {
+    fn new_handle(&mut self) -> u32 {
+        let outp = self.next_handle;
+        self.next_handle += 1;
+        outp
+    }
+}
+
+static I2C_MANAGER: LazyLock<Mutex<I2cManager>> = LazyLock::new(|| {
+    Mutex::new(I2cManager {
+        instances: HashMap::new(),
+        next_handle: 1,
+    })
+});
+
+extern "C" fn host_open(exec_env: wasm_exec_env_t) -> u32 {
+    unsafe {
+        let module_inst = wasm_runtime_get_module_inst(exec_env);
+        if module_inst.is_null() {
+            eprintln!("Host: Failed to get module instance");
+            return 0;
+        }
+
+        let mut manager = I2C_MANAGER.lock().unwrap();
+        let handle = manager.new_handle();
+
+        let permissions = I2cPermissions {
+            can_read: true,
+            can_write: true,
+            is_whitelisted: false,
+            addresses: vec![],
+        };
+
+        let instances_handles = manager.instances.entry(module_inst).or_insert_with(HashMap::new);
+
+        instances_handles.insert(handle, permissions);
+
+        println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
+        println!("Host: ACL for module instance {:p} is now: {:?}", module_inst, instances_handles);
+
+        handle
+    }
+}
 
 extern "C" fn host_read(
     exec_env: wasm_exec_env_t,
@@ -57,6 +122,7 @@ fn main() -> Result<(), RuntimeError> {
     let runtime = Runtime::builder()
         .use_system_allocator()
         .register_host_function("host_read", host_read as *mut c_void)
+        .register_host_function("host_open", host_open as *mut c_void)
         .build()?;
 
     let mut d = PathBuf::from(".");

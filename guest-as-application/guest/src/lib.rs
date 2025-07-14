@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use wasip1_i2c::i2c::{ self, ErrorCode };
+use wasip1_i2c::i2c::{ self };
 
 extern crate alloc;
 use lol_alloc::{ AssumeSingleThreaded, FreeListAllocator };
@@ -20,8 +20,10 @@ fn panic(_info: &PanicInfo) -> ! {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() {
-    let device = i2c::I2cResource::new(50);
+    let device = i2c::I2cResource::new();
+    let device2 = i2c::I2cResource::new();
     let _ = device.read(0xabcd, 3);
+    let _ = device2.read(0x1234, 3);
     /* match device.read(0xabcd, 3) {
         Ok(res) => 100,
         Err(err_code) =>

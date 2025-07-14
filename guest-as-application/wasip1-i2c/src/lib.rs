@@ -5,12 +5,14 @@ pub mod i2c {
     use alloc::vec::Vec;
     extern crate alloc;
     pub type I2cAddress = u16;
-    pub type I2cHandle = u32;
+    pub type I2cResourceHandle = u32;
 
     #[link(wasm_import_module = "host")]
     unsafe extern "C" {
+        #[link_name = "host_open"]
+        unsafe fn host_open() -> I2cResourceHandle;
         #[link_name = "host_read"]
-        unsafe fn host_read(_: I2cHandle, _: I2cAddress, _: u64, _: *mut u8) -> u8;
+        unsafe fn host_read(_: I2cResourceHandle, _: I2cAddress, _: u64, _: *mut u8) -> u8;
         // #[link_name = "host_write"]
         // unsafe fn host_write(_: I2cHandle, _: I2cAddress);
     }
@@ -64,10 +66,10 @@ pub mod i2c {
 
     // TODO: ErrorCode is nu in totaal 16 bits, maar ik gebruik eigenlijk maar 8 bits, pas ik dit aan zoals de wit-bindgen c code = constante waarde voor iedere errormogelijkheid
     /* impl ErrorCode {
-        pub fn unlift(self) -> u8 {
+        pub fn lower(self) -> u8 {
             match self {
                 ErrorCode::NoAcknowledge(source) => {
-                    let no_ack_bits = unsafe { source.unlift() };
+                    let no_ack_bits = unsafe { source.lower() };
                     (2u8 << 5) | no_ack_bits
                 }
                 _ => ,
@@ -77,13 +79,12 @@ pub mod i2c {
 
     #[repr(transparent)]
     pub struct I2cResource {
-        handle: I2cHandle,
+        handle: I2cResourceHandle,
     }
 
     impl I2cResource {
-        // TODO: define how handle should be generated or handled
-        pub fn new(handle: I2cHandle) -> Self {
-            Self { handle: handle }
+        pub fn new() -> Self {
+            Self { handle: unsafe { host_open() } }
         }
 
         pub fn read(&self, address: I2cAddress, len: u64) -> Result<Vec<u8>, ErrorCode> {
