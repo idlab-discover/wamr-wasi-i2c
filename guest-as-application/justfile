@@ -1,167 +1,40 @@
-# Pi Deployment Justfile
-# Usage: just [recipe] [host=IP] [user=USERNAME] [mode=release|debug]
-
-set unstable
-
-set shell := ["bash", "-euo", "pipefail", "-c"]
-
-# Default variables (can be overridden via arguments)
 pi_host := env_var_or_default("PI_HOST", "wasmpi.local")
 pi_user := env_var_or_default("PI_USER", "robin")
+pi_arch := "aarch64-unknown-linux-musl"
 guest_project := "guest"
 host_project := "host"
 
-# Colors for output
-RED := '\033[0;31m'
-GREEN := '\033[0;32m'
-YELLOW := '\033[1;33m'
-BLUE := '\033[0;34m'
-NC := '\033[0m' # No Color
+default: (build-local)
 
-# Default recipe
-default: (deploy "release")
+build-guest:
+	cd "{{guest_project}}" && cargo build --target wasm32-wasip1 --release
+	mkdir -p "./target/wasmodules"
+	cp "{{guest_project}}/target/wasm32-wasip1/release/{{guest_project}}.wasm" "./target/wasmodules/"
 
-# Show available commands
-help:
-	@echo "Available commands:"
-	@echo "  build-pi [mode]			        - Build both WASM and Pi binary"
-	@echo "  build-local [mode]			        - Build both WASM and Local Host binary"
-	@echo "  deploy [mode] [host] [user]        - Build for and deploy to Pi"
-	@echo "  run-pi [mode] [host] [user]        - Deploy and run on Pi"
-	@echo "  run-local [mode]           		- Deploy and run on Local Host"
-	@echo "  clean                              - Clean all build artifacts"
-	@echo "  logs [host] [user]                 - Show Pi logs"
-	@echo ""
-	@echo "Arguments:"
-	@echo "  mode: release (default) or debug"
-	@echo "  host: Pi IP address (default: {{pi_host}})"
-	@echo "  user: Pi username (default: {{pi_user}})"
-	@echo ""
-	@echo "Examples:"
-	@echo "  just deploy debug"
-	@echo "  just deploy release 192.168.1.50 myuser"
-	@echo "  just run debug host=192.168.1.50"
-	@echo ""
+build-local: (build-guest)
+	cd "{{host_project}}" && cargo build --release
+	cp "{{host_project}}/target/release/{{host_project}}" "./target/"
 
-# Build WASM module
-[script("bash")]
-build-guest mode="release":
-	echo -e "{{BLUE}}🔨 Building WASM module ({{mode}} mode)...{{NC}}"
-	cd "{{guest_project}}"
+build-pi: (build-guest)
+	cd "{{host_project}}" && cargo build --target "{{pi_arch}}" --release
+	cp "{{host_project}}/target/{{pi_arch}}/release/{{host_project}}" "./target/"
 
-	if [ "{{mode}}" = "debug" ]; then
-		cargo build --target wasm32-wasip1
-		wasm_file="target/wasm32-wasip1/debug/{{guest_project}}.wasm"
-	else
-		cargo build --target wasm32-wasip1 --release
-		wasm_file="target/wasm32-wasip1/release/{{guest_project}}.wasm"
-	fi
+deploy host=pi_host user=pi_user: (build-pi)
+	scp.exe -o StrictHostKeyChecking=no "./target/{{host_project}}" "{{user}}"@"{{host}}":/home/"{{user}}"/masterproef/
+	scp.exe -o StrictHostKeyChecking=no "./target/wasmodules/{{guest_project}}.wasm" "{{user}}"@"{{host}}":/home/"{{user}}"/masterproef/wasmodules
+	ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host}}" "chmod +x ./masterproef/{{host_project}}"
 
-	if [ ! -f "$wasm_file" ]; then
-		echo -e "{{RED}}❌ ERROR: WASM build failed - $wasm_file not found{{NC}}"
-		exit 1
-	fi
+run-pi host=pi_host user=pi_user: (deploy host user)
+	ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host}}" "masterproef/{{host_project}}"
 
-	# Create wasmodules directory if it doesn't exist
-	mkdir -p "../{{host_project}}/wasmodules"
+run-local: (build-local)
+	cd "target" && "./{{host_project}}"
 
-	# Copy WASM file
-	cp "$wasm_file" "../{{host_project}}/wasmodules/"
-	echo -e "{{GREEN}}✅ WASM module built and copied successfully{{NC}}"
-
-# Build Pi binary
-[script("bash")]
-build-local mode="release": (build-guest mode)
-	echo -e "{{BLUE}}🔨 Building binary for Local Host ({{mode}} mode)...{{NC}}"
-	cd "{{host_project}}"
-	if [ "{{mode}}" = "debug" ]; then
-		cargo build
-		binary_file="target/debug/{{host_project}}"
-	else
-		cargo build --release
-		binary_file="target/release/{{host_project}}"
-	fi
-
-	if [ ! -f "$binary_file" ]; then
-		echo -e "{{RED}}❌ ERROR: Local Host binary build failed - $binary_file not found{{NC}}"
-		exit 1
-	fi
-
-	cp "$binary_file" "./{{host_project}}"
-	echo -e "{{GREEN}}✅ Local Host binary built successfully{{NC}}"
-
-# Build Pi binary
-[script("bash")]
-build-pi mode="release": (build-guest mode)
-	echo -e "{{BLUE}}🔨 Building binary for Pi  ({{mode}} mode)...{{NC}}"
-	cd "{{host_project}}"
-	if [ "{{mode}}" = "debug" ]; then
-		cargo build --target aarch64-unknown-linux-gnu
-		binary_file="target/aarch64-unknown-linux-gnu/debug/{{host_project}}"
-	else
-		cargo build --target aarch64-unknown-linux-gnu --release
-		binary_file="target/aarch64-unknown-linux-gnu/release/{{host_project}}"
-	fi
-
-	if [ ! -f "$binary_file" ]; then
-		echo -e "{{RED}}❌ ERROR: Pi binary build failed - $binary_file not found{{NC}}"
-		exit 1
-	fi
-
-	echo -e "{{GREEN}}✅ Pi binary built successfully{{NC}}"
-
-# Deploy to Pi
-[script("bash")]
-deploy mode="release" host=pi_host user=pi_user: (build-pi mode)
-	echo -e "{{BLUE}}🚀 Deploying to Pi at {{host}}...{{NC}}"
-
-	if [ "{{mode}}" = "debug" ]; then
-		binary_path="{{host_project}}/target/aarch64-unknown-linux-gnu/debug/{{host_project}}"
-	else
-		binary_path="{{host_project}}/target/aarch64-unknown-linux-gnu/release/{{host_project}}"
-	fi
-
-	# Deploy using scp with SSH keys
-	scp.exe -o StrictHostKeyChecking=no "$binary_path" "{{user}}"@"{{host}}":/home/"{{user}}"/
-
-	if [ $? -eq 0 ]; then
-		echo -e "{{GREEN}}✅ Deployment successful!{{NC}}"
-		echo -e "{{BLUE}}Binary available at: /home/{{user}}/{{host_project}}{{NC}}"
-	else
-		echo -e "{{RED}}❌ ERROR: Deployment failed{{NC}}"
-		exit 1
-	fi
-
-# Deploy and run on Pi
-run-pi mode="release" host=pi_host user=pi_user: (deploy mode host user)
-	@echo -e "{{BLUE}}▶️  Running on Pi...{{NC}}"
-	ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host}}" "./{{host_project}}"
-
-# Deploy and run Local
-run-local mode="release": (build-local mode)
-	@echo -e "{{BLUE}}▶️  Running Locally...{{NC}}"
-	@cd "{{host_project}}" && "./{{host_project}}"
-
-# Clean all build artifacts
 clean:
-	@echo -e "{{YELLOW}}🧹 Cleaning build artifacts...{{NC}}"
 	cd "{{guest_project}}" && cargo clean || true
 	cd "{{host_project}}" && cargo clean || true
-	rm -f "{{host_project}}/wasmodules/*.wasm"
-	@echo -e "{{GREEN}}✅ Clean complete!{{NC}}"
+	rm -f "./target/wasmodules/*.wasm"
+	rm -f "./target/{{host_project}}"
 
-# Show Pi system logs
 logs host=pi_host user=pi_user:
-	@echo -e "{{BLUE}}📋 Showing Pi logs (Ctrl+C to exit)...{{NC}}"
 	ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host}}" "journalctl -f"
-
-# Check project status
-status:
-	@echo -e "{{BLUE}}📊 Project Status:{{NC}}"
-	@echo "WASM Project: {{guest_project}}"
-	@echo "Pi Project: {{host_project}}"
-	@echo "Default Pi Host: {{pi_host}}"
-	@echo "Default Pi User: {{pi_user}}"
-	@echo ""
-	@echo "Installed Rust Targets:"
-	@rustup target list | grep -E "installed"
