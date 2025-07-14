@@ -19,10 +19,11 @@ fn panic(_info: &PanicInfo) -> ! {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn main() -> u8 {
+pub extern "C" fn _start() {
     let device = i2c::I2cResource::new(50);
-    match device.read(0xabcd, 3) {
-        Ok(res) => res[0],
+    let _ = device.read(0xabcd, 3);
+    /* match device.read(0xabcd, 3) {
+        Ok(res) => 100,
         Err(err_code) =>
             match err_code {
                 ErrorCode::Bus => 0b000_00000,
@@ -36,5 +37,5 @@ pub extern "C" fn main() -> u8 {
                 ErrorCode::Overrun => 0b011_00000,
                 ErrorCode::Other => 0b100_00000,
             }
-    }
+    }; */
 }

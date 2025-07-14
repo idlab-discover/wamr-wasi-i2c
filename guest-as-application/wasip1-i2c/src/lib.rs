@@ -11,8 +11,8 @@ pub mod i2c {
     unsafe extern "C" {
         #[link_name = "host_read"]
         unsafe fn host_read(_: I2cHandle, _: I2cAddress, _: u64, _: *mut u8) -> u8;
-        #[link_name = "host_write"]
-        unsafe fn host_write(_: I2cHandle, _: I2cAddress);
+        // #[link_name = "host_write"]
+        // unsafe fn host_write(_: I2cHandle, _: I2cAddress);
     }
 
     #[repr(u8)]

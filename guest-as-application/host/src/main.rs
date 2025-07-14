@@ -31,7 +31,6 @@ extern "C" fn host_read(
     println!("Host: i2c_read called - handle: {}, address: 0x{:04x}, len: {}", handle, addr, len);
     unsafe {
         let module_inst = wasm_runtime_get_module_inst(exec_env);
-
         if module_inst.is_null() {
             eprintln!("Host: Failed to get module instance");
             return I2cErrorCode::Other as u8;
@@ -41,7 +40,6 @@ extern "C" fn host_read(
             module_inst,
             buffer_ptr as u64
         ) as *mut u8;
-
         if native_buffer.is_null() {
             eprintln!("Host: Invalid buffer pointer");
             return I2cErrorCode::Other as u8;
@@ -49,8 +47,9 @@ extern "C" fn host_read(
 
         let simulated_data = vec![0x11, 0xab, 0xcd]; // decimal: 17,171,205
 
-        std::ptr::copy_nonoverlapping(simulated_data.as_ptr(), native_buffer, len as usize);
-        0b000_00001
+        std::ptr::copy_nonoverlapping::<u8>(simulated_data.as_ptr(), native_buffer, len as usize);
+        println!("Host: Read completed");
+        0b000_00000
     }
 }
 
@@ -71,13 +70,13 @@ fn main() -> Result<(), RuntimeError> {
 
     let instance = Instance::new(&runtime, &module, 1024 * 64)?;
 
-    let function = Function::find_export_func(&instance, "main");
+    let function = Function::find_export_func(&instance, "_start");
     let params: Vec<WasmValue> = vec![];
     match function {
         Ok(main_func) => {
             println!("Calling main function...");
-            let results = main_func.call(&instance, &params)?;
-            println!("main returned: {:?}", results);
+            main_func.call(&instance, &params)?;
+            println!("main returned");
         }
         Err(e) => {
             eprintln!("No main function found: {}", e);
