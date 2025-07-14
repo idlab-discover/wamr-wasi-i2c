@@ -66,32 +66,30 @@ static I2C_MANAGER: LazyLock<Mutex<I2cManager>> = LazyLock::new(|| {
 });
 
 extern "C" fn host_open(exec_env: wasm_exec_env_t) -> u32 {
-    unsafe {
-        let module_inst = wasm_runtime_get_module_inst(exec_env);
-        if module_inst.is_null() {
-            eprintln!("Host: Failed to get module instance");
-            return 0;
-        }
-
-        let mut manager = I2C_MANAGER.lock().unwrap();
-        let handle = manager.new_handle();
-
-        let permissions = I2cPermissions {
-            can_read: true,
-            can_write: true,
-            is_whitelisted: false,
-            addresses: vec![],
-        };
-
-        let instances_handles = manager.instances.entry(module_inst).or_insert_with(HashMap::new);
-
-        instances_handles.insert(handle, permissions);
-
-        println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
-        println!("Host: ACL for module instance {:p} is now: {:?}", module_inst, instances_handles);
-
-        handle
+    let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
+    if module_inst.is_null() {
+        eprintln!("Host: Failed to get module instance");
+        return 0;
     }
+
+    let mut manager = I2C_MANAGER.lock().unwrap();
+    let handle = manager.new_handle();
+
+    let permissions = I2cPermissions {
+        can_read: true,
+        can_write: true,
+        is_whitelisted: false,
+        addresses: vec![],
+    };
+
+    let instances_handles = manager.instances.entry(module_inst).or_insert_with(HashMap::new);
+
+    instances_handles.insert(handle, permissions);
+
+    println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
+    println!("Host: ACL for module instance {:p} is now: {:?}", module_inst, instances_handles);
+
+    handle
 }
 
 extern "C" fn host_read(
