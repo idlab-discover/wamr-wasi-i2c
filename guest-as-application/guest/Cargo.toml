@@ -9,3 +9,10 @@ wasip1-i2c = { version = "0.1.0", path = "../wasip1-i2c" }
 
 [lib]
 crate-type = ["cdylib"]
+
+# Disable test harness voor no_std
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

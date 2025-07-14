@@ -1,7 +1,8 @@
-#![no_main]
 #![no_std]
+#![no_main]
 
 use wasip1_i2c::i2c::{ self, ErrorCode };
+
 extern crate alloc;
 use lol_alloc::{ AssumeSingleThreaded, FreeListAllocator };
 use core::panic::PanicInfo;
