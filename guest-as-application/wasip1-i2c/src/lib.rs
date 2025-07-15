@@ -13,8 +13,8 @@ pub mod i2c {
         unsafe fn host_open() -> I2cResourceHandle;
         #[link_name = "host_read"]
         unsafe fn host_read(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *mut u8) -> u8;
-        #[link_name = "host_write"]
-        unsafe fn host_write(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *const u8) -> u8;
+        // #[link_name = "host_write"]
+        // unsafe fn host_write(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *const u8) -> u8;
     }
 
     #[repr(u8)]
@@ -113,26 +113,6 @@ pub mod i2c {
                     ),
                 4 => Err(ErrorCode::Overrun),
                 _ => Err(ErrorCode::Other),
-            };
-            final_result
-        }
-
-        pub fn write(&self, address: I2cAddress, data: &[u8]) -> ErrorCode {
-            let host_res = unsafe {
-                let res = host_write(self.handle, address, data.len(), data.as_ptr() as *const u8);
-                core::hint::black_box(res)
-            };
-
-            let error_type = host_res >> 5; // take first 3 bits only
-            let error_variant = 0b000_11111 & host_res; // take last 5 bits only
-
-            let final_result = match error_type {
-                0 => ErrorCode::None,
-                1 => ErrorCode::Bus,
-                2 => ErrorCode::ArbitrationLoss,
-                3 => ErrorCode::NoAcknowledge(unsafe { NoAcknowledgeSource::lift(error_variant) }),
-                4 => ErrorCode::Overrun,
-                _ => ErrorCode::Other,
             };
             final_result
         }
