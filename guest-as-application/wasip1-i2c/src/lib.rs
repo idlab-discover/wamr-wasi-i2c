@@ -1,7 +1,6 @@
 #![no_std]
 
 pub mod i2c {
-    use core::mem::MaybeUninit;
     use alloc::vec::Vec;
     extern crate alloc;
     pub type I2cAddress = u16;
@@ -26,7 +25,7 @@ pub mod i2c {
     }
 
     impl NoAcknowledgeSource {
-        pub unsafe fn lift(val: u8) -> NoAcknowledgeSource {
+        pub fn lift(val: u8) -> NoAcknowledgeSource {
             match val {
                 0 => NoAcknowledgeSource::Address,
                 1 => NoAcknowledgeSource::Data,
@@ -49,8 +48,6 @@ pub mod i2c {
 
     #[derive(Debug)]
     pub enum ErrorCode {
-        // TODO: Is het oké om een None code te voorzien?
-        None,
         /// Bus error occurred. e.g. A START or a STOP condition is detected and
         /// is not located after a multiple of 9 SCL clock pulses.
         Bus,
@@ -90,6 +87,74 @@ pub mod i2c {
         }
 
         pub fn read(&self, address: I2cAddress, len: usize) -> Result<Vec<u8>, ErrorCode> {
+            // Return Area is 3 pointers
+            //  1: Geeft aan 0=Ok, 1=Err
+            //  2: Point naar begin van de data
+            //  3: Point naar lengte van de data
+            //  OF 2+3 gebruikt voor Errorcode + NoAckSource
+            #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
+            #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
+            struct ReturnArea(
+                [::core::mem::MaybeUninit<u8>; 3 * ::core::mem::size_of::<*const u8>()],
+            );
+            let mut return_area = ReturnArea(
+                [::core::mem::MaybeUninit::uninit(); 3 * ::core::mem::size_of::<*const u8>()]
+            );
+            let return_area_begin = return_area.0.as_mut_ptr().cast::<u8>();
+
+            unsafe {
+                host_read(self.handle, address, len, return_area_begin);
+            }
+
+            let return_discriminant = unsafe { *return_area_begin.add(0).cast::<u8>() }; // 0 = Ok, 1 = Err
+            let output_result = match return_discriminant {
+                0 => {
+                    let read_data = unsafe {
+                        let read_data_start = *return_area_begin
+                            .add(::core::mem::size_of::<*const u8>())
+                            .cast::<*mut u8>();
+                        let read_data_size = *return_area_begin
+                            .add(2 * ::core::mem::size_of::<*const u8>())
+                            .cast::<usize>();
+                        let data_length = read_data_size;
+
+                        Vec::from_raw_parts(read_data_start.cast(), data_length, data_length)
+                    };
+                    Ok(read_data)
+                }
+                _ => {
+                    let error_code = {
+                        let error_discriminant = unsafe {
+                            *return_area_begin.add(::core::mem::size_of::<*const u8>()).cast::<u8>()
+                        };
+                        let full_error_code = match error_discriminant {
+                            0 => { ErrorCode::Bus }
+                            1 => { ErrorCode::ArbitrationLoss }
+                            2 => {
+                                let no_ack_source = {
+                                    let no_ack_discriminant = unsafe {
+                                        *return_area_begin
+                                            .add(1 + 1 * ::core::mem::size_of::<*const u8>())
+                                            .cast::<u8>()
+                                    };
+
+                                    NoAcknowledgeSource::lift(no_ack_discriminant)
+                                };
+                                ErrorCode::NoAcknowledge(no_ack_source)
+                            }
+                            3 => { ErrorCode::Overrun }
+                            _ => ErrorCode::Other,
+                        };
+
+                        full_error_code
+                    };
+                    Err(error_code)
+                }
+            };
+            output_result
+        }
+
+        /* pub fn read(&self, address: I2cAddress, len: usize) -> Result<Vec<u8>, ErrorCode> {
             let mut read_buffer: Vec<MaybeUninit<u8>> = Vec::with_capacity(len as usize);
 
             let host_res = unsafe {
@@ -115,7 +180,7 @@ pub mod i2c {
                 _ => Err(ErrorCode::Other),
             };
             final_result
-        }
+        } */
     }
 
     // TODO: Implement Drop function
