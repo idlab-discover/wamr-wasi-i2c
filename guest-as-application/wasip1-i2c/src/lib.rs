@@ -11,7 +11,7 @@ pub mod i2c {
         #[link_name = "host_open"]
         unsafe fn host_open() -> I2cResourceHandle;
         #[link_name = "host_read"]
-        unsafe fn host_read(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *mut u8) -> u8;
+        unsafe fn host_read(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *mut u8); // TODO: Als we wel een u8 returnen, kunnen we WAMR errors returnen?
         // #[link_name = "host_write"]
         // unsafe fn host_write(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *const u8) -> u8;
     }

@@ -7,6 +7,9 @@ use wamr_rust_sdk::{
     module::Module,
     runtime::Runtime,
     sys::{
+        wasm_runtime_malloc,
+        wasm_runtime_module_free,
+        wasm_runtime_module_malloc,
         WASMModuleInstanceCommon,
         wasm_exec_env_t,
         wasm_runtime_get_module_inst,
@@ -96,14 +99,23 @@ extern "C" fn host_read(
     exec_env: wasm_exec_env_t,
     handle: u32,
     addr: u16,
-    len: u64,
+    len: usize,
     buffer_ptr: u32
-) -> u8 {
+) {
     println!("Host: i2c_read called - handle: {}, address: 0x{:04x}, len: {}", handle, addr, len);
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
-        return I2cErrorCode::Other as u8;
+        return;
+    }
+
+    let native_return_area = (unsafe {
+        wasm_runtime_addr_app_to_native(module_inst, buffer_ptr as u64)
+    }) as *mut u8;
+
+    if native_return_area.is_null() {
+        eprintln!("Host: Invalid return area pointer"); // TODO: Should panic!
+        return;
     }
 
     let can_read = {
@@ -116,31 +128,75 @@ extern "C" fn host_read(
                     handle,
                     module_inst
                 );
-                return I2cErrorCode::Other as u8;
+                unsafe {
+                    *native_return_area.add(0) = 1; // 0=Ok,1=Err
+                    *native_return_area.add(std::mem::size_of::<*const u8>()) = 4; // Errorcode::Other = 4
+                }
+                return;
             }
         }
     };
 
     if !can_read {
         eprintln!("Host: Access denied - no read permission for handle {}", handle);
-        return I2cErrorCode::Other as u8;
+        unsafe {
+            *native_return_area.add(0) = 1; // 0=Ok,1=Err
+            *native_return_area.add(std::mem::size_of::<*const u8>()) = 4; // Errorcode::Other = 4
+        }
+        return;
     }
 
-    let native_buffer = (unsafe {
-        wasm_runtime_addr_app_to_native(module_inst, buffer_ptr as u64)
+    let simulated_data: Vec<u8> = vec![0x11, 0xab, 0xcd]; // decimal: 17,171,205
+
+    // Option 1: Updated malloc
+    let buffer: *mut *mut c_void = std::ptr::null_mut();
+    let wasm_data_ptr = unsafe {
+        wasm_runtime_module_malloc(module_inst, simulated_data.len() as u64, buffer)
+    };
+
+    // Option 2: Legacy malloc
+    let native_data_ptr = unsafe { wasm_runtime_malloc(simulated_data.len() as u32) };
+
+    println!("Host: WASM data ptrs zijn: {:?} en {:?}", wasm_data_ptr, native_data_ptr);
+
+    let native_data_ptr = (unsafe {
+        wasm_runtime_addr_app_to_native(module_inst, wasm_data_ptr as u64)
     }) as *mut u8;
-    if native_buffer.is_null() {
-        eprintln!("Host: Invalid buffer pointer");
-        return I2cErrorCode::Other as u8;
-    }
 
-    let simulated_data = vec![0x11, 0xab, 0xcd]; // decimal: 17,171,205
+    if native_data_ptr.is_null() {
+        eprintln!("Host: Failed to convert WASM pointer to native");
+        unsafe {
+            // Free the allocated memory
+            wasm_runtime_module_free(module_inst, wasm_data_ptr);
+            // Write error
+            *native_return_area.add(0) = 1;
+            *native_return_area.add(std::mem::size_of::<*const u8>()) = 4;
+        }
+        return;
+    }
 
     unsafe {
-        std::ptr::copy_nonoverlapping::<u8>(simulated_data.as_ptr(), native_buffer, len as usize);
+        std::ptr::copy_nonoverlapping(
+            simulated_data.as_ptr(),
+            native_data_ptr,
+            simulated_data.len()
+        );
     }
+
+    unsafe {
+        // Discriminant = 0 (Ok)
+        *native_return_area.add(0) = 0;
+
+        // Write pointer to data (as WASM pointer, not native)
+        let ptr_offset = std::mem::size_of::<*const u8>();
+        *(native_return_area.add(ptr_offset) as *mut u64) = wasm_data_ptr;
+
+        // Write length
+        let len_offset = 2 * std::mem::size_of::<*const u8>();
+        *(native_return_area.add(len_offset) as *mut usize) = simulated_data.len();
+    }
+
     println!("Host: Read completed");
-    0b000_00000
 }
 
 fn main() -> Result<(), RuntimeError> {
@@ -159,7 +215,17 @@ fn main() -> Result<(), RuntimeError> {
 
     module.set_wasi_context(wasi_ctx);
 
-    let instance = Instance::new(&runtime, &module, 1024 * 64)?;
+    let instance = Instance::new(&runtime, &module, 1024 * 256)?;
+
+    /* use wamr_rust_sdk::sys::wasm_runtime_lookup_function;
+    for name in ["malloc", "free", "__wbindgen_malloc", "cabi_realloc", "_start"] {
+        let func = unsafe {
+            let module_inst = instance.get_inner_instance();
+            let c_name = std::ffi::CString::new(name).unwrap();
+            wasm_runtime_lookup_function(module_inst, c_name.as_ptr())
+        };
+        println!("Function '{}' found: {}", name, !func.is_null());
+    } */
 
     let function = Function::find_export_func(&instance, "_start");
     let params: Vec<WasmValue> = vec![];
