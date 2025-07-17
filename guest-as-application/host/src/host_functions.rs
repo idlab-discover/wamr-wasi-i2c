@@ -93,7 +93,7 @@ pub extern "C" fn write(
 
     println!("Host: native_buffer: {:?}", native_buffer);
 
-    let res = unsafe { Vec::from_raw_parts(native_buffer, len, len) };
+    let res = unsafe { std::slice::from_raw_parts(native_buffer, len) };
 
     println!("Host: Write completed: {:?}", res);
     0b000_00000
