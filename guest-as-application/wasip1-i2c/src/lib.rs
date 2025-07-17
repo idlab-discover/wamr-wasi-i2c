@@ -1,5 +1,3 @@
-#![no_std]
-
 pub mod i2c {
     use core::mem::MaybeUninit;
     use alloc::vec::Vec;
@@ -117,11 +115,8 @@ pub mod i2c {
             final_result
         }
 
-        pub fn write(&self, address: I2cAddress, data: &[u8]) -> ErrorCode {
-            let host_res = unsafe {
-                let res = host_write(self.handle, address, data.len(), data.as_ptr() as *const u8);
-                core::hint::black_box(res)
-            };
+        pub fn write(&self, address: I2cAddress, data: &Vec<u8>) -> ErrorCode {
+            let host_res = unsafe { host_write(self.handle, address, data.len(), data.as_ptr()) };
 
             let error_type = host_res >> 5; // take first 3 bits only
             let error_variant = 0b000_11111 & host_res; // take last 5 bits only

@@ -1,30 +1,14 @@
-#![no_std]
 #![no_main]
 
-use wasip1_i2c::i2c::{ self };
-
-extern crate alloc;
-use lol_alloc::{ AssumeSingleThreaded, FreeListAllocator };
-use core::panic::PanicInfo;
-
-#[global_allocator]
-static ALLOCATOR: AssumeSingleThreaded<FreeListAllocator> = unsafe {
-    AssumeSingleThreaded::new(FreeListAllocator::new())
-};
-
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {
-    }
-}
+use wasip1_i2c::i2c;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() {
     let device = i2c::I2cResource::new();
-    let device2 = i2c::I2cResource::new();
-    let _ = device.read(0xabcd, 3);
-    let _ = device2.read(0x1234, 3);
-    let _ = device.write(0x5678, &[0x12, 0xac, 0xce]);
+    // let device2 = i2c::I2cResource::new();
+    // let _ = device.read(0xabcd, 3);
+    // let _ = device2.read(0x1234, 3);
+    let _ = device.write(0x5678, &vec![0x12, 0xac, 0xce]);
     /* match device.read(0xabcd, 3) {
         Ok(res) => 100,
         Err(err_code) =>

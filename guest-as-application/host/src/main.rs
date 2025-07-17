@@ -20,10 +20,10 @@ fn main() -> Result<(), RuntimeError> {
         .register_host_function("host_write", host_functions::write as *mut c_void)
         .build()?;
 
-    let mut d = PathBuf::from(".");
-    d.push("wasmodules");
-    d.push("guest.wasm");
-    let mut module = Module::from_file(&runtime, d.as_path())?;
+    let mut path_buffer = PathBuf::from(".");
+    path_buffer.push("wasmodules");
+    path_buffer.push("guest.wasm");
+    let mut module = Module::from_file(&runtime, path_buffer.as_path())?;
 
     let wasi_ctx = WasiCtxBuilder::new().build();
 

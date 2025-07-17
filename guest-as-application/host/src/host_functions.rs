@@ -48,16 +48,22 @@ pub extern "C" fn write(
     handle: u32,
     addr: u16,
     len: usize,
-    buffer_ptr: u32
+    buffer_ptr: usize
 ) -> u8 {
-    println!("Host: i2c_write called - handle: {}, address: 0x{:04x}, len: {}", handle, addr, len);
+    println!(
+        "Host: i2c_write called - handle: {}, address: 0x{:04x}, len: {}, buffer_ptr: {:?}",
+        handle,
+        addr,
+        len,
+        buffer_ptr
+    );
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
         return I2cErrorCode::Other as u8;
     }
 
-    let can_write = {
+    /* let can_write = {
         let manager = I2C_MANAGER.lock().unwrap();
         match manager.get_permissions(module_inst, handle) {
             Some(permissions) => permissions.can_write,
@@ -75,7 +81,7 @@ pub extern "C" fn write(
     if !can_write {
         eprintln!("Host: Access denied - no write permission for handle {}", handle);
         return I2cErrorCode::Other as u8;
-    }
+    } */
 
     let native_buffer = (unsafe {
         wasm_runtime_addr_app_to_native(module_inst, buffer_ptr as u64)
@@ -84,6 +90,8 @@ pub extern "C" fn write(
         eprintln!("Host: Invalid buffer pointer");
         return I2cErrorCode::Other as u8;
     }
+
+    println!("Host: native_buffer: {:?}", native_buffer);
 
     let res = unsafe { Vec::from_raw_parts(native_buffer, len, len) };
 
