@@ -1,6 +1,5 @@
 use std::{ ffi::c_void, path::PathBuf };
 use std::collections::HashMap;
-use std::sync::{ Mutex, LazyLock };
 use wamr_rust_sdk::{
     function::Function,
     instance::Instance,
@@ -10,7 +9,6 @@ use wamr_rust_sdk::{
         wasm_runtime_malloc,
         wasm_runtime_module_free,
         wasm_runtime_module_malloc,
-        WASMModuleInstanceCommon,
         wasm_exec_env_t,
         wasm_runtime_get_module_inst,
         wasm_runtime_addr_app_to_native,
@@ -20,6 +18,9 @@ use wamr_rust_sdk::{
     RuntimeError,
 };
 
+mod manager;
+use manager::{ I2C_MANAGER, I2cPermissions };
+
 #[repr(u8)]
 enum I2cErrorCode {
     Bus = 0,
@@ -28,45 +29,6 @@ enum I2cErrorCode {
     Overrun = 3,
     Other = 4,
 }
-
-#[derive(Clone, Debug)]
-struct I2cPermissions {
-    can_read: bool,
-    can_write: bool,
-    is_whitelisted: bool,
-    addresses: Vec<u16>,
-}
-
-struct I2cManager {
-    instances: HashMap<*const WASMModuleInstanceCommon, HashMap<u32, I2cPermissions>>,
-    next_handle: u32,
-}
-
-unsafe impl Send for I2cManager {}
-unsafe impl Sync for I2cManager {}
-
-impl I2cManager {
-    fn new_handle(&mut self) -> u32 {
-        let outp = self.next_handle;
-        self.next_handle += 1;
-        outp
-    }
-
-    fn get_permissions(
-        &self,
-        instance: *const WASMModuleInstanceCommon,
-        handle: u32
-    ) -> Option<&I2cPermissions> {
-        self.instances.get(&instance)?.get(&handle)
-    }
-}
-
-static I2C_MANAGER: LazyLock<Mutex<I2cManager>> = LazyLock::new(|| {
-    Mutex::new(I2cManager {
-        instances: HashMap::new(),
-        next_handle: 1,
-    })
-});
 
 extern "C" fn host_open(exec_env: wasm_exec_env_t) -> u32 {
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };

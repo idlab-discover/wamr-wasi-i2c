@@ -1,6 +1,7 @@
 #![no_std]
 
 pub mod i2c {
+    use core::mem::MaybeUninit;
     use alloc::vec::Vec;
     extern crate alloc;
     pub type I2cAddress = u16;
@@ -11,9 +12,9 @@ pub mod i2c {
         #[link_name = "host_open"]
         unsafe fn host_open() -> I2cResourceHandle;
         #[link_name = "host_read"]
-        unsafe fn host_read(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *mut u8); // TODO: Als we wel een u8 returnen, kunnen we WAMR errors returnen?
-        // #[link_name = "host_write"]
-        // unsafe fn host_write(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *const u8) -> u8;
+        unsafe fn host_read(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *mut u8) -> u8;
+        #[link_name = "host_write"]
+        unsafe fn host_write(_: I2cResourceHandle, _: I2cAddress, _: usize, _: *const u8) -> u8;
     }
 
     #[repr(u8)]
@@ -25,7 +26,7 @@ pub mod i2c {
     }
 
     impl NoAcknowledgeSource {
-        pub fn lift(val: u8) -> NoAcknowledgeSource {
+        pub unsafe fn lift(val: u8) -> NoAcknowledgeSource {
             match val {
                 0 => NoAcknowledgeSource::Address,
                 1 => NoAcknowledgeSource::Data,
@@ -48,6 +49,8 @@ pub mod i2c {
 
     #[derive(Debug)]
     pub enum ErrorCode {
+        // TODO: Is het oké om een None code te voorzien?
+        None,
         /// Bus error occurred. e.g. A START or a STOP condition is detected and
         /// is not located after a multiple of 9 SCL clock pulses.
         Bus,
@@ -87,74 +90,6 @@ pub mod i2c {
         }
 
         pub fn read(&self, address: I2cAddress, len: usize) -> Result<Vec<u8>, ErrorCode> {
-            // Return Area is 3 pointers
-            //  1: Geeft aan 0=Ok, 1=Err
-            //  2: Point naar begin van de data
-            //  3: Point naar lengte van de data
-            //  OF 2+3 gebruikt voor Errorcode + NoAckSource
-            #[cfg_attr(target_pointer_width = "64", repr(align(8)))]
-            #[cfg_attr(target_pointer_width = "32", repr(align(4)))]
-            struct ReturnArea(
-                [::core::mem::MaybeUninit<u8>; 3 * ::core::mem::size_of::<*const u8>()],
-            );
-            let mut return_area = ReturnArea(
-                [::core::mem::MaybeUninit::uninit(); 3 * ::core::mem::size_of::<*const u8>()]
-            );
-            let return_area_begin = return_area.0.as_mut_ptr().cast::<u8>();
-
-            unsafe {
-                host_read(self.handle, address, len, return_area_begin);
-            }
-
-            let return_discriminant = unsafe { *return_area_begin.add(0).cast::<u8>() }; // 0 = Ok, 1 = Err
-            let output_result = match return_discriminant {
-                0 => {
-                    let read_data = unsafe {
-                        let read_data_start = *return_area_begin
-                            .add(::core::mem::size_of::<*const u8>())
-                            .cast::<*mut u8>();
-                        let read_data_size = *return_area_begin
-                            .add(2 * ::core::mem::size_of::<*const u8>())
-                            .cast::<usize>();
-                        let data_length = read_data_size;
-
-                        Vec::from_raw_parts(read_data_start.cast(), data_length, data_length)
-                    };
-                    Ok(read_data)
-                }
-                _ => {
-                    let error_code = {
-                        let error_discriminant = unsafe {
-                            *return_area_begin.add(::core::mem::size_of::<*const u8>()).cast::<u8>()
-                        };
-                        let full_error_code = match error_discriminant {
-                            0 => { ErrorCode::Bus }
-                            1 => { ErrorCode::ArbitrationLoss }
-                            2 => {
-                                let no_ack_source = {
-                                    let no_ack_discriminant = unsafe {
-                                        *return_area_begin
-                                            .add(1 + 1 * ::core::mem::size_of::<*const u8>())
-                                            .cast::<u8>()
-                                    };
-
-                                    NoAcknowledgeSource::lift(no_ack_discriminant)
-                                };
-                                ErrorCode::NoAcknowledge(no_ack_source)
-                            }
-                            3 => { ErrorCode::Overrun }
-                            _ => ErrorCode::Other,
-                        };
-
-                        full_error_code
-                    };
-                    Err(error_code)
-                }
-            };
-            output_result
-        }
-
-        /* pub fn read(&self, address: I2cAddress, len: usize) -> Result<Vec<u8>, ErrorCode> {
             let mut read_buffer: Vec<MaybeUninit<u8>> = Vec::with_capacity(len as usize);
 
             let host_res = unsafe {
@@ -180,7 +115,27 @@ pub mod i2c {
                 _ => Err(ErrorCode::Other),
             };
             final_result
-        } */
+        }
+
+        pub fn write(&self, address: I2cAddress, data: &[u8]) -> ErrorCode {
+            let host_res = unsafe {
+                let res = host_write(self.handle, address, data.len(), data.as_ptr() as *const u8);
+                core::hint::black_box(res)
+            };
+
+            let error_type = host_res >> 5; // take first 3 bits only
+            let error_variant = 0b000_11111 & host_res; // take last 5 bits only
+
+            let final_result = match error_type {
+                0 => ErrorCode::None,
+                1 => ErrorCode::Bus,
+                2 => ErrorCode::ArbitrationLoss,
+                3 => ErrorCode::NoAcknowledge(unsafe { NoAcknowledgeSource::lift(error_variant) }),
+                4 => ErrorCode::Overrun,
+                _ => ErrorCode::Other,
+            };
+            final_result
+        }
     }
 
     // TODO: Implement Drop function
