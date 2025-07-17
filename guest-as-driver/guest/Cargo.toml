@@ -1,0 +1,19 @@
+[package]
+name = "guest"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+lol_alloc = "0.4.1"
+wasip1-i2c = { version = "0.1.0", path = "../wasip1-i2c" }
+
+[lib]
+crate-type = ["cdylib"]
+harness = false
+
+# Disable test harness voor no_std
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
