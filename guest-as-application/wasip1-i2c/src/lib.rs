@@ -1,5 +1,5 @@
 pub mod i2c {
-    use core::mem::MaybeUninit;
+    use std::mem::MaybeUninit;
     use std::mem::transmute;
     pub type I2cAddress = u16;
     pub type I2cResourceHandle = u32;
