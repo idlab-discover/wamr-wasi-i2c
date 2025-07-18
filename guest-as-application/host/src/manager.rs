@@ -1,4 +1,4 @@
-use std::{ collections::HashMap, sync::{ LazyLock, Mutex } };
+use std::{ collections::HashMap, fmt, sync::{ LazyLock, Mutex } };
 
 use wamr_rust_sdk::sys::WASMModuleInstanceCommon;
 
@@ -18,6 +18,19 @@ pub struct I2cManager {
 
 unsafe impl Send for I2cManager {}
 unsafe impl Sync for I2cManager {}
+
+impl fmt::Debug for I2cManager {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "I2cManager {{")?;
+        for (module_ptr, handles) in &self.instances {
+            writeln!(f, "\tModule @ {:p}:", module_ptr)?;
+            for (handle, permissions) in handles {
+                writeln!(f, "\t\t{} => {:?}", handle, permissions)?;
+            }
+        }
+        writeln!(f, "}}")
+    }
+}
 
 // TODO: Resources worden eigenlijk nog niet correct behandeld
 //      - We moeten nog checken op terug vrijkomen van resources

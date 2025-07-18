@@ -5,7 +5,7 @@ use wasip1_i2c::i2c;
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() {
     let device = i2c::I2cResource::new();
-    // let device2 = i2c::I2cResource::new();
+    let device2 = i2c::I2cResource::new();
     let res = device.read(0xabcd, 3);
     if let Ok(data) = res {
         println!("Guest: Read data: {:?}", data);

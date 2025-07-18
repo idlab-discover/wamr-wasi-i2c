@@ -1,5 +1,6 @@
 mod manager;
 mod host_functions;
+mod i2c_commons;
 
 use std::{ ffi::c_void, path::PathBuf };
 use wamr_rust_sdk::{
@@ -8,11 +9,11 @@ use wamr_rust_sdk::{
     module::Module,
     runtime::Runtime,
     value::WasmValue,
-    wasi_context::WasiCtxBuilder,
     RuntimeError,
 };
 
 fn main() -> Result<(), RuntimeError> {
+    // Setup WAMR & register host functions
     let runtime = Runtime::builder()
         .use_system_allocator()
         .register_host_function("host_read", host_functions::read as *mut c_void)
@@ -20,24 +21,21 @@ fn main() -> Result<(), RuntimeError> {
         .register_host_function("host_write", host_functions::write as *mut c_void)
         .build()?;
 
+    // Look for and load in the compiled guest wasm module
     let mut path_buffer = PathBuf::from(".");
     path_buffer.push("wasmodules");
     path_buffer.push("guest.wasm");
-    let mut module = Module::from_file(&runtime, path_buffer.as_path())?;
+    let module = Module::from_file(&runtime, path_buffer.as_path())?;
 
-    let wasi_ctx = WasiCtxBuilder::new().build();
-
-    module.set_wasi_context(wasi_ctx);
-
+    // Instantiate loaded wasm module
     let instance = Instance::new(&runtime, &module, 1024 * 64)?;
 
+    // Look for and run the entrance function of the guest module
     let function = Function::find_export_func(&instance, "_start");
     let params: Vec<WasmValue> = vec![];
     match function {
         Ok(main_func) => {
-            println!("Calling main function...");
             main_func.call(&instance, &params)?;
-            println!("main returned");
         }
         Err(e) => {
             eprintln!("No main function found: {}", e);

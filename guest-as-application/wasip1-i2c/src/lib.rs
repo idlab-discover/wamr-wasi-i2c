@@ -23,7 +23,7 @@ pub mod i2c {
     }
 
     impl NoAcknowledgeSource {
-        pub unsafe fn lift(val: u8) -> NoAcknowledgeSource {
+        pub fn lift(val: u8) -> NoAcknowledgeSource {
             match val {
                 0 => NoAcknowledgeSource::Address,
                 1 => NoAcknowledgeSource::Data,
@@ -33,7 +33,7 @@ pub mod i2c {
             }
         }
 
-        pub unsafe fn lower(&self) -> u8 {
+        pub fn lower(&self) -> u8 {
             match self {
                 NoAcknowledgeSource::Address => 0,
                 NoAcknowledgeSource::Data => 1,
@@ -64,13 +64,13 @@ pub mod i2c {
     }
 
     impl ErrorCode {
-        fn lower(&self) -> u8 {
+        pub fn lower(&self) -> u8 {
             match self {
                 ErrorCode::None => 0b000_00000,
                 ErrorCode::Bus => 0b001_00000,
                 ErrorCode::ArbitrationLoss => 0b010_00000,
                 ErrorCode::NoAcknowledge(source) => {
-                    let no_ack_bits = unsafe { source.lower() };
+                    let no_ack_bits = source.lower();
                     0b011_00000 | no_ack_bits
                 }
                 ErrorCode::Overrun => 0b100_00000,
@@ -78,14 +78,14 @@ pub mod i2c {
             }
         }
 
-        fn lift(val: u8) -> ErrorCode {
+        pub fn lift(val: u8) -> ErrorCode {
             let error_type = val >> 5; // take first 3 bits only
             let error_variant = 0b000_11111 & val; // take last 5 bits only
             match error_type {
                 0 => ErrorCode::None,
                 1 => ErrorCode::Bus,
                 2 => ErrorCode::ArbitrationLoss,
-                3 => unsafe { ErrorCode::NoAcknowledge(NoAcknowledgeSource::lift(error_variant)) }
+                3 => ErrorCode::NoAcknowledge(NoAcknowledgeSource::lift(error_variant)),
                 4 => ErrorCode::Overrun,
                 _ => ErrorCode::Other,
             }

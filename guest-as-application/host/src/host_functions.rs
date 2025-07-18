@@ -7,15 +7,7 @@ use wamr_rust_sdk::sys::{
     wasm_runtime_get_module_inst,
 };
 
-#[repr(u8)]
-enum I2cErrorCode {
-    None = 0b000_00000,
-    Bus = 0b001_00000,
-    ArbitrationLoss = 0b010_00000,
-    NoAcknowledge = 0b011_00000,
-    Overrun = 0b100_00000,
-    Other = 0b101_00000,
-}
+use crate::i2c_commons::ErrorCode;
 
 pub extern "C" fn open(exec_env: wasm_exec_env_t) -> u32 {
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
@@ -39,7 +31,7 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> u32 {
     instances_handles.insert(handle, permissions);
 
     println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
-    println!("Host: ACL for module instance {:p} is now: {:?}", module_inst, instances_handles);
+    println!("{:?}", manager);
 
     handle
 }
@@ -61,7 +53,7 @@ pub extern "C" fn write(
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
-        return I2cErrorCode::Other as u8;
+        return ErrorCode::Other.into();
     }
 
     let can_write = {
@@ -74,14 +66,14 @@ pub extern "C" fn write(
                     handle,
                     module_inst
                 );
-                return I2cErrorCode::Other as u8;
+                return ErrorCode::Other.into();
             }
         }
     };
 
     if !can_write {
         eprintln!("Host: Access denied - no write permission for handle {}", handle);
-        return I2cErrorCode::Other as u8;
+        return ErrorCode::Other.into();
     }
 
     let native_buffer = (unsafe {
@@ -89,7 +81,7 @@ pub extern "C" fn write(
     }) as *mut u8;
     if native_buffer.is_null() {
         eprintln!("Host: Invalid buffer pointer");
-        return I2cErrorCode::Other as u8;
+        return ErrorCode::Other.into();
     }
 
     println!("Host: native_buffer: {:?}", native_buffer);
@@ -111,7 +103,7 @@ pub extern "C" fn read(
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
-        return I2cErrorCode::Other as u8;
+        return ErrorCode::Other.into();
     }
 
     let can_read = {
@@ -124,14 +116,14 @@ pub extern "C" fn read(
                     handle,
                     module_inst
                 );
-                return I2cErrorCode::Other as u8;
+                return ErrorCode::Other.into();
             }
         }
     };
 
     if !can_read {
         eprintln!("Host: Access denied - no read permission for handle {}", handle);
-        return I2cErrorCode::Other as u8;
+        return ErrorCode::Other.into();
     }
 
     let native_buffer = (unsafe {
@@ -139,7 +131,7 @@ pub extern "C" fn read(
     }) as *mut u8;
     if native_buffer.is_null() {
         eprintln!("Host: Invalid buffer pointer");
-        return I2cErrorCode::Other as u8;
+        return ErrorCode::Other.into();
     }
 
     let simulated_data = vec![0x11, 0xab, 0xcd]; // decimal: 17,171,205
@@ -148,5 +140,5 @@ pub extern "C" fn read(
         std::ptr::copy_nonoverlapping::<u8>(simulated_data.as_ptr(), native_buffer, len as usize);
     }
     println!("Host: Read completed");
-    0b000_00000
+    ErrorCode::None.into()
 }
