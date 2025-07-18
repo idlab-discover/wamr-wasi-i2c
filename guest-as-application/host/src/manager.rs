@@ -11,6 +11,7 @@ pub struct I2cPermissions {
 }
 
 pub struct I2cManager {
+    // Instance of module => Resource Handle => I2cPermissions
     pub instances: HashMap<*const WASMModuleInstanceCommon, HashMap<u32, I2cPermissions>>,
     next_handle: u32,
 }
@@ -18,6 +19,10 @@ pub struct I2cManager {
 unsafe impl Send for I2cManager {}
 unsafe impl Sync for I2cManager {}
 
+// TODO: Resources worden eigenlijk nog niet correct behandeld
+//      - We moeten nog checken op terug vrijkomen van resources
+//      - Het doorgeven van resources is geen mogelijkheid (ownership op handle)
+//      - Nog niets van error handling
 impl I2cManager {
     pub fn new_handle(&mut self) -> u32 {
         let outp = self.next_handle;

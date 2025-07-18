@@ -1,7 +1,6 @@
 pub mod i2c {
     use core::mem::MaybeUninit;
-    use alloc::vec::Vec;
-    extern crate alloc;
+    use std::mem::transmute;
     pub type I2cAddress = u16;
     pub type I2cResourceHandle = u32;
 
@@ -34,7 +33,7 @@ pub mod i2c {
             }
         }
 
-        pub unsafe fn lower(self) -> u8 {
+        pub unsafe fn lower(&self) -> u8 {
             match self {
                 NoAcknowledgeSource::Address => 0,
                 NoAcknowledgeSource::Data => 1,
@@ -47,7 +46,7 @@ pub mod i2c {
 
     #[derive(Debug)]
     pub enum ErrorCode {
-        // TODO: Is het oké om een None code te voorzien?
+        /// No error occurred. Operation was succesful.
         None,
         /// Bus error occurred. e.g. A START or a STOP condition is detected and
         /// is not located after a multiple of 9 SCL clock pulses.
@@ -64,21 +63,41 @@ pub mod i2c {
         Other,
     }
 
-    // TODO: ErrorCode is nu in totaal 16 bits, maar ik gebruik eigenlijk maar 8 bits, pas ik dit aan zoals de wit-bindgen c code = constante waarde voor iedere errormogelijkheid
-    /* impl ErrorCode {
-        pub fn lower(self) -> u8 {
+    impl ErrorCode {
+        fn lower(&self) -> u8 {
             match self {
+                ErrorCode::None => 0b000_00000,
+                ErrorCode::Bus => 0b001_00000,
+                ErrorCode::ArbitrationLoss => 0b010_00000,
                 ErrorCode::NoAcknowledge(source) => {
                     let no_ack_bits = unsafe { source.lower() };
-                    (2u8 << 5) | no_ack_bits
+                    0b011_00000 | no_ack_bits
                 }
-                _ => ,
+                ErrorCode::Overrun => 0b100_00000,
+                _ => 0b101_00000,
             }
         }
-    } */
+
+        fn lift(val: u8) -> ErrorCode {
+            let error_type = val >> 5; // take first 3 bits only
+            let error_variant = 0b000_11111 & val; // take last 5 bits only
+            match error_type {
+                0 => ErrorCode::None,
+                1 => ErrorCode::Bus,
+                2 => ErrorCode::ArbitrationLoss,
+                3 => unsafe { ErrorCode::NoAcknowledge(NoAcknowledgeSource::lift(error_variant)) }
+                4 => ErrorCode::Overrun,
+                _ => ErrorCode::Other,
+            }
+        }
+    }
 
     #[repr(transparent)]
     pub struct I2cResource {
+        // TODO: Resources worden eigenlijk nog niet correct behandeld
+        //      - We moeten nog checken op terug vrijkomen van resources
+        //      - Het doorgeven van resources is geen mogelijkheid (ownership op handle)
+        //      - Nog niets van error handling
         handle: I2cResourceHandle,
     }
 
@@ -92,44 +111,23 @@ pub mod i2c {
 
             let host_res = unsafe {
                 read_buffer.set_len(len as usize);
-                let res = host_read(self.handle, address, len, read_buffer.as_mut_ptr() as *mut u8);
-                core::hint::black_box(res)
+                host_read(self.handle, address, len, read_buffer.as_mut_ptr() as *mut u8)
             };
 
-            let error_type = host_res >> 5; // take first 3 bits only
-            let error_variant = 0b000_11111 & host_res; // take last 5 bits only
-
-            let final_result = match error_type {
-                0 => Ok(unsafe { core::mem::transmute(read_buffer) }),
-                1 => Err(ErrorCode::Bus),
-                2 => Err(ErrorCode::ArbitrationLoss),
-                3 =>
-                    Err(
-                        ErrorCode::NoAcknowledge(unsafe {
-                            NoAcknowledgeSource::lift(error_variant)
-                        })
-                    ),
-                4 => Err(ErrorCode::Overrun),
-                _ => Err(ErrorCode::Other),
+            let output = match ErrorCode::lift(host_res) {
+                ErrorCode::None => Ok(unsafe { transmute(read_buffer) }),
+                e => Err(e),
             };
-            final_result
+            output
         }
 
-        pub fn write(&self, address: I2cAddress, data: &Vec<u8>) -> ErrorCode {
+        pub fn write(&self, address: I2cAddress, data: &Vec<u8>) -> Result<(), ErrorCode> {
             let host_res = unsafe { host_write(self.handle, address, data.len(), data.as_ptr()) };
 
-            let error_type = host_res >> 5; // take first 3 bits only
-            let error_variant = 0b000_11111 & host_res; // take last 5 bits only
-
-            let final_result = match error_type {
-                0 => ErrorCode::None,
-                1 => ErrorCode::Bus,
-                2 => ErrorCode::ArbitrationLoss,
-                3 => ErrorCode::NoAcknowledge(unsafe { NoAcknowledgeSource::lift(error_variant) }),
-                4 => ErrorCode::Overrun,
-                _ => ErrorCode::Other,
-            };
-            final_result
+            match ErrorCode::lift(host_res) {
+                ErrorCode::None => Ok(()),
+                n => Err(n),
+            }
         }
     }
 

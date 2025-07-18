@@ -9,11 +9,12 @@ use wamr_rust_sdk::sys::{
 
 #[repr(u8)]
 enum I2cErrorCode {
-    Bus = 0,
-    ArbitrationLoss = 1,
-    NoAcknowledge = 2,
-    Overrun = 3,
-    Other = 4,
+    None = 0b000_00000,
+    Bus = 0b001_00000,
+    ArbitrationLoss = 0b010_00000,
+    NoAcknowledge = 0b011_00000,
+    Overrun = 0b100_00000,
+    Other = 0b101_00000,
 }
 
 pub extern "C" fn open(exec_env: wasm_exec_env_t) -> u32 {
@@ -27,7 +28,7 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> u32 {
     let handle = manager.new_handle();
 
     let permissions = I2cPermissions {
-        can_read: false,
+        can_read: true,
         can_write: true,
         is_whitelisted: false,
         addresses: vec![],
@@ -48,14 +49,14 @@ pub extern "C" fn write(
     handle: u32,
     addr: u16,
     len: usize,
-    buffer_ptr: usize
+    buffer_offset: usize
 ) -> u8 {
     println!(
         "Host: i2c_write called - handle: {}, address: 0x{:04x}, len: {}, buffer_ptr: {:?}",
         handle,
         addr,
         len,
-        buffer_ptr
+        buffer_offset
     );
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
@@ -63,7 +64,7 @@ pub extern "C" fn write(
         return I2cErrorCode::Other as u8;
     }
 
-    /* let can_write = {
+    let can_write = {
         let manager = I2C_MANAGER.lock().unwrap();
         match manager.get_permissions(module_inst, handle) {
             Some(permissions) => permissions.can_write,
@@ -81,10 +82,10 @@ pub extern "C" fn write(
     if !can_write {
         eprintln!("Host: Access denied - no write permission for handle {}", handle);
         return I2cErrorCode::Other as u8;
-    } */
+    }
 
     let native_buffer = (unsafe {
-        wasm_runtime_addr_app_to_native(module_inst, buffer_ptr as u64)
+        wasm_runtime_addr_app_to_native(module_inst, buffer_offset as u64)
     }) as *mut u8;
     if native_buffer.is_null() {
         eprintln!("Host: Invalid buffer pointer");

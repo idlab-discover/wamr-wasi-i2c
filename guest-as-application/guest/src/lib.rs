@@ -6,7 +6,10 @@ use wasip1_i2c::i2c;
 pub extern "C" fn _start() {
     let device = i2c::I2cResource::new();
     // let device2 = i2c::I2cResource::new();
-    // let _ = device.read(0xabcd, 3);
+    let res = device.read(0xabcd, 3);
+    if let Ok(data) = res {
+        println!("Guest: Read data: {:?}", data);
+    }
     // let _ = device2.read(0x1234, 3);
     let _ = device.write(0x5678, &vec![0x12, 0xac, 0xce]);
     /* match device.read(0xabcd, 3) {
