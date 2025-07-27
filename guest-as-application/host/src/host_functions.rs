@@ -1,15 +1,26 @@
-use std::collections::HashMap;
-
-use crate::manager::{ I2C_MANAGER, I2cPermissions };
+use crate::manager::{ I2C_MANAGER };
 use wamr_rust_sdk::sys::{
     wasm_exec_env_t,
     wasm_runtime_addr_app_to_native,
     wasm_runtime_get_module_inst,
 };
+use wasip1_i2c::common::{ ErrorCode, I2cResourceHandle, I2cAddress };
 
-use crate::i2c_commons::ErrorCode;
+pub extern "C" fn close(exec_env: wasm_exec_env_t, handle: I2cResourceHandle) {
+    let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
+    if module_inst.is_null() {
+        eprintln!("Host: Failed to get module instance");
+        return;
+    }
 
-pub extern "C" fn open(exec_env: wasm_exec_env_t) -> u32 {
+    let mut manager = I2C_MANAGER.lock().unwrap();
+    manager.close_handle(module_inst, handle);
+
+    println!("Host: Closed I2C handle {} for module instance {:p}", handle, module_inst);
+    println!("{:?}", manager);
+}
+
+pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
@@ -17,18 +28,7 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> u32 {
     }
 
     let mut manager = I2C_MANAGER.lock().unwrap();
-    let handle = manager.new_handle();
-
-    let permissions = I2cPermissions {
-        can_read: true,
-        can_write: true,
-        is_whitelisted: false,
-        addresses: vec![],
-    };
-
-    let instances_handles = manager.instances.entry(module_inst).or_insert_with(HashMap::new);
-
-    instances_handles.insert(handle, permissions);
+    let handle = manager.new_handle(module_inst);
 
     println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
     println!("{:?}", manager);
@@ -38,8 +38,8 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> u32 {
 
 pub extern "C" fn write(
     exec_env: wasm_exec_env_t,
-    handle: u32,
-    addr: u16,
+    handle: I2cResourceHandle,
+    addr: I2cAddress,
     len: usize,
     buffer_offset: usize
 ) -> u8 {
@@ -84,8 +84,6 @@ pub extern "C" fn write(
         return ErrorCode::Other.into();
     }
 
-    println!("Host: native_buffer: {:?}", native_buffer);
-
     let res = unsafe { std::slice::from_raw_parts(native_buffer, len) };
 
     println!("Host: Write completed: {:?}", res);
@@ -94,8 +92,8 @@ pub extern "C" fn write(
 
 pub extern "C" fn read(
     exec_env: wasm_exec_env_t,
-    handle: u32,
-    addr: u16,
+    handle: I2cResourceHandle,
+    addr: I2cAddress,
     len: u64,
     buffer_ptr: u32
 ) -> u8 {

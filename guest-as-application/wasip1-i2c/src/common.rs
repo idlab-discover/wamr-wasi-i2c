@@ -1,3 +1,6 @@
+pub type I2cAddress = u16;
+pub type I2cResourceHandle = u32;
+
 #[repr(u8)]
 #[derive(Debug)]
 pub enum NoAcknowledgeSource {
@@ -82,7 +85,8 @@ impl From<ErrorCode> for u8 {
     }
 }
 
-/* impl From<u8> for ErrorCode {
+/*
+impl From<u8> for ErrorCode {
     fn from(value: u8) -> Self {
         ErrorCode::lift(value)
     }
@@ -104,4 +108,5 @@ impl Into<u8> for NoAcknowledgeSource {
     fn into(self) -> u8 {
         self.lower()
     }
-} */
+}
+*/

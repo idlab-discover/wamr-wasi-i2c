@@ -98,6 +98,7 @@ name = "host"
 version = "0.1.0"
 dependencies = [
  "wamr-rust-sdk",
+ "wasip1-i2c",
 ]
 
 [[package]]
@@ -256,6 +257,10 @@ dependencies = [
  "cc",
  "cmake",
 ]
+
+[[package]]
+name = "wasip1-i2c"
+version = "0.1.0"
 
 [[package]]
 name = "windows-targets"

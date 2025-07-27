@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wasip1-i2c = { version = "0.1.0", path = "../wasip1-i2c" }
+wasip1-i2c = { version = "0.1.0", path = "../wasip1-i2c", features = ["guest-utils"]}
 
 [lib]
 crate-type = ["cdylib"]

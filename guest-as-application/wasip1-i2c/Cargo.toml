@@ -3,5 +3,9 @@ name = "wasip1-i2c"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+guest-utils = []
+
 [lib]
 crate-type = ["lib"]
