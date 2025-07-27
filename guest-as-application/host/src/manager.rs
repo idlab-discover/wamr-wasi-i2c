@@ -1,6 +1,7 @@
 use std::{ collections::HashMap, fmt, sync::{ LazyLock, Mutex } };
 
 use wamr_rust_sdk::sys::WASMModuleInstanceCommon;
+use wasip1_i2c::common::I2cResourceHandle;
 
 #[derive(Clone, Debug)]
 pub struct I2cPermissions {
@@ -12,8 +13,8 @@ pub struct I2cPermissions {
 
 pub struct I2cManager {
     // Instance of module => Resource Handle => I2cPermissions
-    instances: HashMap<*const WASMModuleInstanceCommon, HashMap<u32, I2cPermissions>>,
-    next_handle: u32,
+    instances: HashMap<*const WASMModuleInstanceCommon, HashMap<I2cResourceHandle, I2cPermissions>>,
+    next_handle: I2cResourceHandle,
 }
 
 // TODO: Resources worden eigenlijk nog niet correct behandeld
@@ -24,7 +25,7 @@ pub struct I2cManager {
 //          - Mogelijk om telkens wanneer een nieuwe handle gevraagd wordt na te gaan wat de eerstvolgende vrije handle is voor die instance
 //              - Enkel mogelijk wanneer resources niet doorgegeven kunnen worden, anders een lijst bijhouden van vrije handles OF een nieuwe handle creëren wanneer het overgedragen wordt.
 impl I2cManager {
-    pub fn new_handle(&mut self, instance: *const WASMModuleInstanceCommon) -> u32 {
+    pub fn new_handle(&mut self, instance: *const WASMModuleInstanceCommon) -> I2cResourceHandle {
         let new_handle = self.next_handle;
 
         let permissions = I2cPermissions {
@@ -42,7 +43,11 @@ impl I2cManager {
         new_handle
     }
 
-    pub fn close_handle(&mut self, instance: *const WASMModuleInstanceCommon, handle: u32) {
+    pub fn close_handle(
+        &mut self,
+        instance: *const WASMModuleInstanceCommon,
+        handle: I2cResourceHandle
+    ) {
         if let Some(handles) = self.instances.get_mut(&instance) {
             handles.remove(&handle);
         }
@@ -51,7 +56,7 @@ impl I2cManager {
     pub fn get_permissions(
         &self,
         instance: *const WASMModuleInstanceCommon,
-        handle: u32
+        handle: I2cResourceHandle
     ) -> Option<&I2cPermissions> {
         self.instances.get(&instance)?.get(&handle)
     }
