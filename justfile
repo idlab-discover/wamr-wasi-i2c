@@ -26,8 +26,9 @@ deploy host_addr=pi_host_addr user=pi_user dir=d_dir guest=d_guest host=d_host: 
 	scp.exe -o StrictHostKeyChecking=no "./target/wasmodules/{{guest}}.wasm" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/masterproef/wasmodules
 	ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host_addr}}" "chmod +x ./masterproef/{{host}}"
 
-run-pi host_addr=pi_host_addr user=pi_user dir=d_dir guest=d_guest host=d_host: (deploy host user dir guest host)
-	ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host_addr}}" "masterproef/{{host}}"
+run-pi host_addr=pi_host_addr user=pi_user dir=d_dir guest=d_guest host=d_host: (deploy host_addr user dir guest host)
+	@echo "\n===================\nStarting program...\n===================\n"
+	@ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host_addr}}" "cd /home/{{user}}/masterproef/ && ./{{host}}"
 
 run-local dir=d_dir guest=d_guest host=d_host: (build-local dir guest host)
 	cd "target" && "./{{host}}"
