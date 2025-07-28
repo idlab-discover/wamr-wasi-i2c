@@ -3,12 +3,11 @@ use std::{ collections::HashMap, fmt, sync::{ LazyLock, Mutex } };
 use wamr_rust_sdk::sys::WASMModuleInstanceCommon;
 use wasip1_i2c::common::I2cResourceHandle;
 
+// Can add more permissions like a white/black list of addresses
 #[derive(Clone, Debug)]
 pub struct I2cPermissions {
     pub can_read: bool,
     pub can_write: bool,
-    pub is_whitelisted: bool,
-    pub addresses: Vec<u16>,
 }
 
 pub struct I2cPermissionsManager {
@@ -31,8 +30,6 @@ impl I2cPermissionsManager {
         let permissions = I2cPermissions {
             can_read: true,
             can_write: true,
-            is_whitelisted: false,
-            addresses: vec![],
         };
 
         let instances_handles = self.instances.entry(instance).or_insert_with(HashMap::new);
