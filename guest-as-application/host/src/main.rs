@@ -2,7 +2,7 @@ mod permission_manager;
 mod host_functions;
 mod hardware_manager;
 
-use std::{ ffi::c_void, path::PathBuf };
+use std::{ error::Error, ffi::c_void, path::PathBuf };
 use wamr_rust_sdk::{
     function::Function,
     instance::Instance,
@@ -13,7 +13,7 @@ use wamr_rust_sdk::{
 };
 use hardware_manager::init_i2c_hardware;
 
-fn main() -> Result<(), RuntimeError> {
+fn main() -> Result<(), Box<dyn Error>> {
     // Setup I2C hardware
     if let Err(hardware_manager_error) = init_i2c_hardware("/dev/i2c-1") {
         eprintln!("Host: Error: {}", hardware_manager_error);

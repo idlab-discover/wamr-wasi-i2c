@@ -24,7 +24,7 @@ pub struct I2cPermissionsManager {
 //          - Mogelijk om telkens wanneer een nieuwe handle gevraagd wordt na te gaan wat de eerstvolgende vrije handle is voor die instance
 //              - Enkel mogelijk wanneer resources niet doorgegeven kunnen worden, anders een lijst bijhouden van vrije handles OF een nieuwe handle creëren wanneer het overgedragen wordt.
 impl I2cPermissionsManager {
-    pub fn new_handle(&mut self, instance: *const WASMModuleInstanceCommon) -> I2cResourceHandle {
+    pub fn open_handle(&mut self, instance: *const WASMModuleInstanceCommon) -> I2cResourceHandle {
         let new_handle = self.next_handle;
 
         let permissions = I2cPermissions {

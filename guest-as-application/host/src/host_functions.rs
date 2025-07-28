@@ -30,7 +30,7 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
     }
 
     let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
-    let handle = perm_manager.new_handle(module_inst);
+    let handle = perm_manager.open_handle(module_inst);
 
     println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
     println!("{:?}", perm_manager);
