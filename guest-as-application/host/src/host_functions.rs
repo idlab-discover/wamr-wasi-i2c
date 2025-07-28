@@ -1,4 +1,6 @@
-use crate::manager::{ I2C_MANAGER };
+use crate::permission_manager::I2C_PERMISSIONS_MANAGER;
+use crate::hardware_manager::I2C_HARDWARE_MANAGER;
+use embedded_hal::i2c::I2c;
 use wamr_rust_sdk::sys::{
     wasm_exec_env_t,
     wasm_runtime_addr_app_to_native,
@@ -13,11 +15,11 @@ pub extern "C" fn close(exec_env: wasm_exec_env_t, handle: I2cResourceHandle) {
         return;
     }
 
-    let mut manager = I2C_MANAGER.lock().unwrap();
-    manager.close_handle(module_inst, handle);
+    let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
+    perm_manager.close_handle(module_inst, handle);
 
     println!("Host: Closed I2C handle {} for module instance {:p}", handle, module_inst);
-    println!("{:?}", manager);
+    println!("{:?}", perm_manager);
 }
 
 pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
@@ -27,11 +29,11 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
         return 0;
     }
 
-    let mut manager = I2C_MANAGER.lock().unwrap();
-    let handle = manager.new_handle(module_inst);
+    let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
+    let handle = perm_manager.new_handle(module_inst);
 
     println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
-    println!("{:?}", manager);
+    println!("{:?}", perm_manager);
 
     handle
 }
@@ -57,7 +59,7 @@ pub extern "C" fn write(
     }
 
     let can_write = {
-        let manager = I2C_MANAGER.lock().unwrap();
+        let manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
         match manager.get_permissions(module_inst, handle) {
             Some(permissions) => permissions.can_write,
             None => {
@@ -85,16 +87,23 @@ pub extern "C" fn write(
     }
 
     let res = unsafe { std::slice::from_raw_parts(native_buffer, len) };
+    let mut hardware_guard = I2C_HARDWARE_MANAGER.lock().unwrap();
+    if let Some(hw) = hardware_guard.as_mut() {
+        if let Err(write_err) = hw.bus.write(addr as u8, res) {
+            eprintln!("Host: I2C hardware not initialized: {}", write_err);
+            return ErrorCode::Other.into();
+        }
+    }
 
     println!("Host: Write completed: {:?}", res);
-    0b000_00000
+    ErrorCode::None.into()
 }
 
 pub extern "C" fn read(
     exec_env: wasm_exec_env_t,
     handle: I2cResourceHandle,
     addr: I2cAddress,
-    len: u64,
+    len: usize,
     buffer_ptr: u32
 ) -> u8 {
     println!("Host: i2c_read called - handle: {}, address: 0x{:04x}, len: {}", handle, addr, len);
@@ -105,7 +114,7 @@ pub extern "C" fn read(
     }
 
     let can_read = {
-        let manager = I2C_MANAGER.lock().unwrap();
+        let manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
         match manager.get_permissions(module_inst, handle) {
             Some(permissions) => permissions.can_read,
             None => {
@@ -132,10 +141,24 @@ pub extern "C" fn read(
         return ErrorCode::Other.into();
     }
 
-    let simulated_data = vec![0x11, 0xab, 0xcd]; // decimal: 17,171,205
+    let mut hardware_guard = I2C_HARDWARE_MANAGER.lock().unwrap();
+    if let Some(hw) = hardware_guard.as_mut() {
+        let mut read_buffer = vec![0u8; len as usize];
 
-    unsafe {
-        std::ptr::copy_nonoverlapping::<u8>(simulated_data.as_ptr(), native_buffer, len as usize);
+        match hw.bus.read(addr as u8, &mut read_buffer) {
+            Ok(_) => {
+                unsafe {
+                    std::ptr::copy_nonoverlapping::<u8>(read_buffer.as_ptr(), native_buffer, len);
+                }
+            }
+            Err(_) => {
+                eprintln!("Host: Error: HW Read");
+                return ErrorCode::Other.into();
+            }
+        }
+    } else {
+        eprintln!("I2C hardware not initialized!");
+        return ErrorCode::Other.into();
     }
     println!("Host: Read completed");
     ErrorCode::None.into()

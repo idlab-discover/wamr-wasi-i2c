@@ -11,7 +11,7 @@ pub struct I2cPermissions {
     pub addresses: Vec<u16>,
 }
 
-pub struct I2cManager {
+pub struct I2cPermissionsManager {
     // Instance of module => Resource Handle => I2cPermissions
     instances: HashMap<*const WASMModuleInstanceCommon, HashMap<I2cResourceHandle, I2cPermissions>>,
     next_handle: I2cResourceHandle,
@@ -24,7 +24,7 @@ pub struct I2cManager {
 //          - Wanneer new_handle u32::MAX bereikt zitten we met overflow
 //          - Mogelijk om telkens wanneer een nieuwe handle gevraagd wordt na te gaan wat de eerstvolgende vrije handle is voor die instance
 //              - Enkel mogelijk wanneer resources niet doorgegeven kunnen worden, anders een lijst bijhouden van vrije handles OF een nieuwe handle creëren wanneer het overgedragen wordt.
-impl I2cManager {
+impl I2cPermissionsManager {
     pub fn new_handle(&mut self, instance: *const WASMModuleInstanceCommon) -> I2cResourceHandle {
         let new_handle = self.next_handle;
 
@@ -62,21 +62,21 @@ impl I2cManager {
     }
 }
 
-pub static I2C_MANAGER: LazyLock<Mutex<I2cManager>> = LazyLock::new(|| {
-    Mutex::new(I2cManager {
+pub static I2C_PERMISSIONS_MANAGER: LazyLock<Mutex<I2cPermissionsManager>> = LazyLock::new(|| {
+    Mutex::new(I2cPermissionsManager {
         instances: HashMap::new(),
         next_handle: 1,
     })
 });
 
-unsafe impl Send for I2cManager {}
-unsafe impl Sync for I2cManager {}
+unsafe impl Send for I2cPermissionsManager {}
+unsafe impl Sync for I2cPermissionsManager {}
 
-impl fmt::Debug for I2cManager {
+impl fmt::Debug for I2cPermissionsManager {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "I2cManager {{")?;
         for (module_ptr, handles) in &self.instances {
-            writeln!(f, "\tHandles for Module @ {:p}:", module_ptr)?;
+            writeln!(f, "\tHandles for Module @ {:p}:", *module_ptr)?;
             for (handle, permissions) in handles {
                 writeln!(f, "\t\t{} => {:?}", handle, permissions)?;
             }

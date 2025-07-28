@@ -1,5 +1,6 @@
-mod manager;
+mod permission_manager;
 mod host_functions;
+mod hardware_manager;
 
 use std::{ ffi::c_void, path::PathBuf };
 use wamr_rust_sdk::{
@@ -10,8 +11,15 @@ use wamr_rust_sdk::{
     value::WasmValue,
     RuntimeError,
 };
+use hardware_manager::init_i2c_hardware;
 
 fn main() -> Result<(), RuntimeError> {
+    // Setup I2C hardware
+    if let Err(hardware_manager_error) = init_i2c_hardware("/dev/i2c-1") {
+        eprintln!("Host: Error: {}", hardware_manager_error);
+        return Ok(());
+    }
+
     // Setup WAMR & register host functions
     let runtime = Runtime::builder()
         .use_system_allocator()
