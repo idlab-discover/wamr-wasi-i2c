@@ -88,11 +88,9 @@ pub extern "C" fn write(
 
     let res = unsafe { std::slice::from_raw_parts(native_buffer, len) };
     let mut hardware_guard = I2C_HARDWARE_MANAGER.lock().unwrap();
-    if let Some(hw) = hardware_guard.as_mut() {
-        if let Err(write_err) = hw.bus.write(addr as u8, res) {
-            eprintln!("Host: I2C hardware not initialized: {}", write_err);
-            return ErrorCode::Other.into();
-        }
+    if let Err(write_err) = hardware_guard.bus.write(addr as u8, res) {
+        eprintln!("Host: I2C hardware not initialized: {}", write_err);
+        return ErrorCode::Other.into();
     }
 
     println!("Host: Write completed: {:?}", res);
@@ -142,23 +140,18 @@ pub extern "C" fn read(
     }
 
     let mut hardware_guard = I2C_HARDWARE_MANAGER.lock().unwrap();
-    if let Some(hw) = hardware_guard.as_mut() {
-        let mut read_buffer = vec![0u8; len as usize];
+    let mut read_buffer = vec![0u8; len as usize];
 
-        match hw.bus.read(addr as u8, &mut read_buffer) {
-            Ok(_) => {
-                unsafe {
-                    std::ptr::copy_nonoverlapping::<u8>(read_buffer.as_ptr(), native_buffer, len);
-                }
-            }
-            Err(_) => {
-                eprintln!("Host: Error: HW Read");
-                return ErrorCode::Other.into();
+    match hardware_guard.bus.read(addr as u8, &mut read_buffer) {
+        Ok(_) => {
+            unsafe {
+                std::ptr::copy_nonoverlapping::<u8>(read_buffer.as_ptr(), native_buffer, len);
             }
         }
-    } else {
-        eprintln!("I2C hardware not initialized!");
-        return ErrorCode::Other.into();
+        Err(_) => {
+            eprintln!("Host: Error: HW Read");
+            return ErrorCode::Other.into();
+        }
     }
     println!("Host: Read completed");
     ErrorCode::None.into()
