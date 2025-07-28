@@ -17,11 +17,23 @@ serde_json = "1.0.141"
 [lib]
 name = "host"
 crate-type = ["lib"]
+bench = false
+
+[profile.bench]
+debug = 1
+
+[profile.release]
+debug = 1
+
+[profile.dev]
+debug = 1
 
 [[bin]]
 name = "host"
 path = "src/main.rs"
+bench = false
 
 [[bench]]
 harness = false
-name = "dhat"
+name = "dhat_bench"
+bench = true
