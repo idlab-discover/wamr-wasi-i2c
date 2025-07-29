@@ -45,11 +45,9 @@ inventory::collect!(CustomBenchmark);
 macro_rules! bench_fn {
     ($name:ident, $dispname:literal, $code:expr) => {
         fn $name() -> dhat::HeapStats {
-            let profiler = dhat::Profiler::builder().testing().build();
-            $code;
-            let stats = dhat::HeapStats::get();
-            drop(profiler);
-            stats
+            let _profiler = dhat::Profiler::builder().testing().build();
+            std::hint::black_box($code);
+            dhat::HeapStats::get()
         }
 
 		inventory::submit!(CustomBenchmark {
