@@ -153,6 +153,6 @@ pub extern "C" fn read(
             return ErrorCode::Other.into();
         }
     }
-    println!("Host: Read completed");
+    println!("Host: Read completed: {:?}", read_buffer);
     ErrorCode::None.into()
 }
