@@ -22,13 +22,13 @@ crate-type = ["lib"]
 bench = false
 
 [profile.bench]
-debug = 1
+debug = true
 
 [profile.release]
-debug = 1
+debug = true
 
 [profile.dev]
-debug = 1
+debug = true
 
 [[bin]]
 name = "host"
