@@ -9,9 +9,8 @@ pub extern "C" fn _start() {
     let device = I2cResource::new();
     match device.write(slave_addr, &data) {
         Ok(()) => {
-            match device.read(slave_addr, data.len()) {
-                Ok(read_data) => println!("Guest: Read data: {:?}", read_data),
-                Err(code) => eprintln!("Guest: Read: {:?}", code),
+            if let Err(code) = device.read(slave_addr, data.len()) {
+                eprintln!("Guest: Error: Read: {:?}", code);
             }
         }
         Err(code) => {
