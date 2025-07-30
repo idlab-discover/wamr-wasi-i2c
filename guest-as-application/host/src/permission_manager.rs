@@ -50,6 +50,10 @@ impl I2cPermissionsManager {
         }
     }
 
+    pub fn close_instance(&mut self, instance: *const WASMModuleInstanceCommon) {
+        self.instances.remove(&instance);
+    }
+
     pub fn get_permissions(
         &self,
         instance: *const WASMModuleInstanceCommon,

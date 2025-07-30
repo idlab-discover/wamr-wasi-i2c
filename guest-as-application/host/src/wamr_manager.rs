@@ -8,7 +8,7 @@ use wamr_rust_sdk::{
     RuntimeError,
 };
 
-use crate::host_functions;
+use crate::{ host_functions, permission_manager::I2C_PERMISSIONS_MANAGER };
 
 pub fn setup_runtime() -> Result<Runtime, RuntimeError> {
     // Setup WAMR & register host functions
@@ -30,14 +30,27 @@ pub fn setup_module(runtime: &Runtime) -> Result<Module, RuntimeError> {
     Ok(module)
 }
 
-pub fn setup_module_instance(runtime: &Runtime, module: &Module) -> Result<Instance, RuntimeError> {
-    let instance = Instance::new(runtime, module, 1024 * 64)?;
+pub struct DroppableInstance {
+    pub instance: Instance,
+}
+
+/* impl Drop for DroppableInstance {
+    fn drop(&mut self) {
+        I2C_PERMISSIONS_MANAGER.lock().unwrap().close_instance(self.instance.get_inner_instance());
+    }
+} */
+
+pub fn setup_module_instance(
+    runtime: &Runtime,
+    module: &Module
+) -> Result<DroppableInstance, RuntimeError> {
+    let instance = DroppableInstance { instance: Instance::new(runtime, module, 1024 * 64)? };
     Ok(instance)
 }
 
-pub fn run_guest_function(instance: &Instance) -> Result<WasmValue, RuntimeError> {
-    let function = Function::find_export_func(instance, "_start")?;
+pub fn run_guest_function(instance: &DroppableInstance) -> Result<WasmValue, RuntimeError> {
+    let function = Function::find_export_func(&instance.instance, "_start")?;
     let params: Vec<WasmValue> = vec![];
-    let ret_val = function.call(instance, &params)?;
+    let ret_val = function.call(&instance.instance, &params)?;
     Ok(ret_val)
 }
