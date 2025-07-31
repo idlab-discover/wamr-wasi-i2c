@@ -5,8 +5,9 @@ edition = "2024"
 
 [dependencies]
 wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk", tag = "v1.1.0" }
-wamr_impl = { path = "../wamr_impl" }
 dhat = "0.3.3"
+wamr_impl = { path = "../wamr_impl" }
+native_impl = { path = "../native_impl" }
 
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"]}

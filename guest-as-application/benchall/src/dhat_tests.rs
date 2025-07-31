@@ -8,4 +8,16 @@ fn wamr_test() {
     }
 }
 
-pub static TESTS: [fn(); 1] = [wamr_test];
+fn native_test() {
+    let _profiler = dhat::Profiler::builder().file_name("native_impl1.json").build();
+    let mut hw = native_impl::setup();
+    native_impl::pingpong(&mut hw);
+}
+
+fn native_test2() {
+    let mut hw = native_impl::setup();
+    let _profiler = dhat::Profiler::builder().file_name("native_impl2.json").build();
+    native_impl::pingpong(&mut hw);
+}
+
+pub static TESTS: [fn(); 3] = [wamr_test, native_test, native_test2];

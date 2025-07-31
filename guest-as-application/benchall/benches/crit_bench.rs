@@ -1,26 +1,7 @@
-use std::hint::black_box;
-use criterion::{ criterion_group, criterion_main, Criterion };
-use wamr_impl;
-use wamr_rust_sdk::{ module::Module, runtime::Runtime };
+mod crit_tests;
 
-fn setup_once() -> (Runtime, Module, wamr_impl::DroppableInstance) {
-    // Doe setup eenmalig buiten de benchmark
-    let runtime = wamr_impl::setup_runtime().unwrap();
-    let module = wamr_impl::setup_module(&runtime).unwrap();
-    let instance = wamr_impl::setup_module_instance(&runtime, &module).unwrap();
-    (runtime, module, instance)
-}
-
-fn criterion_benchmark(c: &mut Criterion) {
-    let (_runtime, _module, instance) = setup_once();
-
-    c.bench_function("I2C Ping Pong", |b| {
-        b.iter(|| {
-            // Meet alleen de functie-aanroep
-            black_box(wamr_impl::run_guest_function(&instance).unwrap())
-        })
-    });
-}
+use crit_tests::criterion_benchmark;
+use criterion::{ criterion_group, criterion_main };
 
 /* fn full_run() {
     let runtime = wamr_manager::setup_runtime().expect("Bench: Full: Runtime Failed");
