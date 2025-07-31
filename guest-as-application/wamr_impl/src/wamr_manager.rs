@@ -34,11 +34,11 @@ pub struct DroppableInstance {
     pub instance: Instance,
 }
 
-/* impl Drop for DroppableInstance {
+impl Drop for DroppableInstance {
     fn drop(&mut self) {
         I2C_PERMISSIONS_MANAGER.lock().unwrap().close_instance(self.instance.get_inner_instance());
     }
-} */
+}
 
 pub fn setup_module_instance(
     runtime: &Runtime,

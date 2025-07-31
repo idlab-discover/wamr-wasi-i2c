@@ -17,7 +17,6 @@ pub struct I2cPermissionsManager {
 }
 
 // TODO: Resources worden eigenlijk nog niet correct behandeld
-//      - We moeten nog checken op terug vrijkomen van resources
 //      - Het doorgeven van resources is ook nog geen mogelijkheid (ownership op handle), maar maakt ook niet enorm veel sense in de context van i2c
 //      - Nog niets van error handling
 //          - Wanneer new_handle u32::MAX bereikt zitten we met overflow
