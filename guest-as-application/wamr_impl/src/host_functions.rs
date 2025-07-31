@@ -18,8 +18,8 @@ pub extern "C" fn close(exec_env: wasm_exec_env_t, handle: I2cResourceHandle) {
     let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
     perm_manager.close_handle(module_inst, handle);
 
-    println!("Host: Closed I2C handle {} for module instance {:p}", handle, module_inst);
-    println!("{:?}", perm_manager);
+    // println!("Host: Closed I2C handle {} for module instance {:p}", handle, module_inst);
+    // println!("{:?}", perm_manager);
 }
 
 pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
@@ -32,8 +32,8 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
     let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
     let handle = perm_manager.open_handle(module_inst);
 
-    println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
-    println!("{:?}", perm_manager);
+    // println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
+    // println!("{:?}", perm_manager);
 
     handle
 }
