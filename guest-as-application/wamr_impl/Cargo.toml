@@ -21,3 +21,8 @@ debug = true
 
 [profile.dev]
 debug = true
+
+[[bin]]
+name = "wamr_run"
+path = "src/main.rs"
+bench = false

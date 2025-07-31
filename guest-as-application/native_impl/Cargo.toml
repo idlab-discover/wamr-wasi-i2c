@@ -10,3 +10,8 @@ embedded-hal = "1.0.0"
 [lib]
 name = "native_impl"
 crate-type = ["lib"]
+
+[[bin]]
+name = "native_run"
+path = "src/main.rs"
+bench = false
