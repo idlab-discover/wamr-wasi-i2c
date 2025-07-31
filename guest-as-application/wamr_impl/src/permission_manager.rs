@@ -1,4 +1,4 @@
-use std::{ collections::HashMap, fmt, sync::{ LazyLock, Mutex } };
+use std::{ collections::HashMap, sync::{ LazyLock, Mutex } };
 
 use wamr_rust_sdk::sys::WASMModuleInstanceCommon;
 use wasip1_i2c::common::I2cResourceHandle;

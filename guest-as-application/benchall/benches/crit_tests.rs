@@ -2,7 +2,7 @@ use criterion::{ Criterion };
 
 use wamr_rust_sdk::{ module::Module, runtime::Runtime };
 
-fn setup_once() -> (Runtime, Module, wamr_impl::DroppableInstance) {
+fn setup_wamr() -> (Runtime, Module, wamr_impl::DroppableInstance) {
     // Doe setup eenmalig buiten de benchmark
     let runtime = wamr_impl::setup_runtime().unwrap();
     let module = wamr_impl::setup_module(&runtime).unwrap();
@@ -11,7 +11,7 @@ fn setup_once() -> (Runtime, Module, wamr_impl::DroppableInstance) {
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let (_runtime, _module, instance) = setup_once();
+    let (_runtime, _module, instance) = setup_wamr();
     let mut native_hw = native_impl::setup();
 
     c.bench_function("WAMR Ping Pong", |b| {
