@@ -3,12 +3,12 @@
 version = 4
 
 [[package]]
-name = "guest"
+name = "wasip1-i2c-guest"
 version = "0.1.0"
 dependencies = [
- "wasip1-i2c",
+ "wasip1-i2c-lib",
 ]
 
 [[package]]
-name = "wasip1-i2c"
+name = "wasip1-i2c-lib"
 version = "0.1.0"

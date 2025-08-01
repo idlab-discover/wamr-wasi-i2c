@@ -25,7 +25,7 @@ pub fn setup_runtime() -> Result<Runtime, RuntimeError> {
 pub fn setup_module(runtime: &Runtime) -> Result<Module, RuntimeError> {
     let mut path_buffer = PathBuf::from(".");
     path_buffer.push("wasmodules");
-    path_buffer.push("guest.wasm");
+    path_buffer.push("guestp1.wasm");
     let module = Module::from_file(runtime, path_buffer.as_path())?;
     Ok(module)
 }

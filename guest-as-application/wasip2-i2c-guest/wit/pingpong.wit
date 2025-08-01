@@ -1,0 +1,7 @@
+package my:pingpong;
+
+world pingpong {
+	import wasi:i2c/i2c;
+
+	export run: func();
+}

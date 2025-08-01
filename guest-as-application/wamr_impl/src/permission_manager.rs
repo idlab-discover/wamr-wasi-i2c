@@ -1,7 +1,7 @@
 use std::{ collections::HashMap, sync::{ LazyLock, Mutex } };
 
 use wamr_rust_sdk::sys::WASMModuleInstanceCommon;
-use wasip1_i2c::common::I2cResourceHandle;
+use wasip1_i2c_lib::common::I2cResourceHandle;
 
 // Can add more permissions like a white/black list of addresses
 #[derive(Clone, Debug)]

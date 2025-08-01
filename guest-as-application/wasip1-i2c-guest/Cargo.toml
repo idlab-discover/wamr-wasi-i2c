@@ -1,0 +1,10 @@
+[package]
+name = "wasip1-i2c-guest"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wasip1-i2c-lib = { version = "0.1.0", path = "../wasip1-i2c-lib", features = ["guest-utils"]}
+
+[lib]
+crate-type = ["cdylib"]

@@ -6,7 +6,7 @@ use wamr_rust_sdk::sys::{
     wasm_runtime_addr_app_to_native,
     wasm_runtime_get_module_inst,
 };
-use wasip1_i2c::common::{ ErrorCode, I2cResourceHandle, I2cAddress };
+use wasip1_i2c_lib::common::{ ErrorCode, I2cResourceHandle, I2cAddress };
 
 pub extern "C" fn close(exec_env: wasm_exec_env_t, handle: I2cResourceHandle) {
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };

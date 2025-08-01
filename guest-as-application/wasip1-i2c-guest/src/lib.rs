@@ -1,6 +1,6 @@
 #![no_main]
 
-use wasip1_i2c::{ common::I2cAddress, guest::I2cResource };
+use wasip1_i2c_lib::{ common::I2cAddress, guest::I2cResource };
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() {

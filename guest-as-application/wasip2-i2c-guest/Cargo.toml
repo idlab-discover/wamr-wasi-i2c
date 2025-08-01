@@ -1,0 +1,20 @@
+[package]
+name = "wasip2-i2c-guest"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wit-bindgen-rt = { version = "0.43.0", features = ["bitflags"] }
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.component]
+package = "my:pingpong"
+
+[package.metadata.component.target]
+path = "./wit"
+world = "pingpong"
+
+[package.metadata.component.target.dependencies]
+"wasi:i2c" = { path = "./wit/deps/i2c" }

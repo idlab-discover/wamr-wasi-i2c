@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk", tag = "v1.1.0" }
-wasip1-i2c = { version = "0.1.0", path = "../wasip1-i2c" }
+wasip1-i2c-lib = { version = "0.1.0", path = "../wasip1-i2c-lib" }
 linux-embedded-hal = "0.4.0"
 embedded-hal = "1.0.0"
 

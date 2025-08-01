@@ -11,12 +11,22 @@ native_impl = { path = "../native_impl" }
 
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"]}
-# pprof = { version = "0.15", features = ["flamegraph", "criterion"] }
+# pprof = { version = "0.15", features = ["flamegraph"] }
 
 [profile.release]
 debug = true
 
+[[bin]]
+name = "bench_dhat"
+path = "src/dhat.rs"
+bench = false
+
+# [[bin]]
+# name = "bench_perf"
+# bench = false
+# path = "src/perf.rs"
+
 [[bench]]
-name = "crit_bench"
+name = "bench_crit"
 harness = false
 bench = true
