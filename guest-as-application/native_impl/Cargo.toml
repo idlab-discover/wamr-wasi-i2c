@@ -15,6 +15,6 @@ name = "native_impl"
 crate-type = ["lib"]
 
 [[bin]]
-name = "native_run"
+name = "native_impl"
 path = "src/main.rs"
 bench = false

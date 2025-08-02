@@ -27,17 +27,20 @@ wamr: (build-p1-guest)
 	cd "{{dir}}/wamr_impl" && cargo build --target "{{pi_arch}}" --release
 	cp "{{dir}}/wamr_impl/target/{{pi_arch}}/release/wamr_impl" "./target/hostp1"
 
+native:
+	cd "{{dir}}/native_impl" && cargo build --target "{{pi_arch}}" --release
+	mkdir -p "./target/wasmodules"
+	cp "{{dir}}/native_impl/target/{{pi_arch}}/release/native_impl" "./target/hostn"
+
 bench: (build-p1-guest) (build-p2-guest)
 	cd "{{dir}}/benchall" && cargo build --all-targets --release --target {{pi_arch}}
 	find "{{dir}}/benchall/target/{{pi_arch}}/release/deps/" -type f -executable -name "*bench*" -exec sh -c 'dest=$(basename "{}" | awk -F"-" "{print \$1}"); cp "{}" "./target/$dest"' \;
 	cp "{{dir}}/benchall/target/{{pi_arch}}/release/bench*" "./target/"
 
 
-deploy-pi:
-	{{scp}} -o StrictHostKeyChecking=no "./target/host*" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/masterproef/
-	{{scp}} -o StrictHostKeyChecking=no "./target/bench*" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/masterproef/
-	{{scp}} -o StrictHostKeyChecking=no "./target/wasmodules/guest*.wasm" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/masterproef/wasmodules/
-	{{ssh}} -o StrictHostKeyChecking=no "{{user}}"@"{{host_addr}}" "chmod +x ~/masterproef/host*"
+deploy:
+	{{scp}} -r "./target/" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/masterproef/
+	{{ssh}} "{{user}}"@"{{host_addr}}" 'chmod +x ~/masterproef/target/host*'
 
 
 
@@ -54,12 +57,13 @@ deploy-pi:
 # 	scp.exe -o StrictHostKeyChecking=no "./target/wasmodules/{{guest}}.wasm" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/masterproef/wasmodules/
 # 	ssh.exe -o StrictHostKeyChecking=no "{{user}}"@"{{host_addr}}" "chmod +x ./masterproef/*bench*"
 
-
-clean:
+deepclean: (clean)
 	cd "{{dir}}/wasip1-i2c-guest" && cargo clean || true
 	cd "{{dir}}/wasip2-i2c-guest" && cargo clean || true
 	cd "{{dir}}/wamr_impl" && cargo clean || true
 	cd "{{dir}}/wasmtime_impl" && cargo clean || true
+
+clean:
 	rm -rf "./target/"
 
 pi-logs:

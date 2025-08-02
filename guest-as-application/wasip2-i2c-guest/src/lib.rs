@@ -3,18 +3,17 @@ mod bindings;
 
 use bindings::Guest;
 
-use crate::bindings::wasi::i2c::i2c;
+use crate::bindings::{ get_i2c_bus };
 
-struct Component;
+struct PingPongComponent;
 
-impl Guest for Component {
+impl Guest for PingPongComponent {
     /// Say hello!
     fn run() {
-        let dev = unsafe { i2c::I2c::from_handle(0x1u32) };
+        let dev = get_i2c_bus(1);
         dev.write(0x09, &[0x68, 0x65, 0x6c, 0x6c, 0x6f]).expect("Guest: Write error");
-        let rr = dev.read(0x09, 5);
-        println!("Guest: Read Result: {:?}", rr);
+        let rr = dev.read(0x09, 5).expect("Guest: Failed reading data");
     }
 }
 
-bindings::export!(Component with_types_in bindings);
+bindings::export!(PingPongComponent with_types_in bindings);

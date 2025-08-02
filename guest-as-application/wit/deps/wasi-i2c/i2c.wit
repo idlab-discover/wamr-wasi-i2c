@@ -1,0 +1,31 @@
+package wasi:i2c;
+
+interface i2c {
+    type address = u16;
+    variant error-code {
+        bus,
+
+        arbitration-loss,
+
+        no-acknowledge(no-acknowledge-source),
+
+        overrun,
+
+        other,
+    }
+
+    enum no-acknowledge-source {
+        address,
+
+        data,
+
+        unknown,
+    }
+
+    resource i2c {
+
+        read: func(address: address, len: u64) -> result<list<u8>, error-code>;
+
+        write: func(address: address, data: list<u8>) -> result<_, error-code>;
+    }
+}

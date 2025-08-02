@@ -1,0 +1,10 @@
+[package]
+name = "wasmtime_impl"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+embedded-hal = "1.0.0"
+linux-embedded-hal = "0.4.0"
+wasmtime = "35.0.0"
+# wasmtime-wasi = "35.0.0"
