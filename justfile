@@ -34,13 +34,13 @@ native:
 [group('Creation: Host')]
 wamr: (build-p1-guest)
 	cd "{{dir}}/wamr_impl" && cargo build --target "{{pi_arch}}" --release
-	cp "{{dir}}/wamr_impl/target/{{pi_arch}}/release/wamr_impl" "./target/hostp1"
+	cp "{{dir}}/wamr_impl/target/{{pi_arch}}/release/wamr_run" "./target/hostp1"
 
 # Build the WASMTIME Host Implementation for the PI Architecture
 [group('Creation: Host')]
 wasmtime: (build-p2-guest)
 	cd "{{dir}}/wasmtime_impl" && cargo build --target "{{pi_arch}}" --release -j 4
-	cp "{{dir}}/wasmtime_impl/target/{{pi_arch}}/release/wasmtime_impl" "./target/hostp2"
+	cp "{{dir}}/wasmtime_impl/target/{{pi_arch}}/release/wasmtime_run" "./target/hostp2"
 
 # Build the BENCH Implementation to profile all the implementations
 [group('Creation: Host')]

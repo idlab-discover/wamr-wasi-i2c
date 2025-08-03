@@ -8,3 +8,12 @@ anyhow = "1.0.98"
 embedded-hal = "1.0.0"
 linux-embedded-hal = "0.4.0"
 wasmtime = {version = "35.0.0", default-features = false, features = ["component-model", "cranelift", "runtime"]}
+
+[lib]
+name = "wasmtime_impl"
+crate-type = ["lib"]
+
+[[bin]]
+name = "wasmtime_run"
+path = "src/main.rs"
+bench = false
