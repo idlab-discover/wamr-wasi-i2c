@@ -40,9 +40,9 @@ fn native_pingpong() {
 #[cfg(feature = "dhat-runtime")]
 fn wamr_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wamr_setup.json").build();
-    let _ = wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed");
-    /* std::hint::black_box({
-    }); */
+    let (_rt, _mod, _instance, _f) = wamr_impl
+        ::setup_runtime()
+        .expect("[BENCH:dhat] WAMR runtime setup failed");
 }
 
 #[cfg(feature = "dhat-runtime")]
