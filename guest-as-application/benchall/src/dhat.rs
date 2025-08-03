@@ -1,7 +1,7 @@
-#[cfg(feature = "dhat-heap")]
+#[cfg(any(feature = "dhat-runtime", feature = "dhat-heap"))]
 use dhat;
 
-#[cfg(feature = "dhat-heap")]
+#[cfg(any(feature = "dhat-runtime", feature = "dhat-heap"))]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
@@ -40,23 +40,24 @@ fn native_pingpong() {
 #[cfg(feature = "dhat-runtime")]
 fn wamr_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wamr_setup.json").build();
-    std::hint::black_box({
-        wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed")
-    });
+    let _ = wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed");
+    /* std::hint::black_box({
+    }); */
 }
 
 #[cfg(feature = "dhat-runtime")]
 fn wasmtime_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wasmtime_setup.json").build();
-    std::hint::black_box({
-        wasmtime_impl::setup_runtime().expect("[BENCH:crit] Wasmtime runtime setup failed")
-    });
+    let _ = wasmtime_impl::setup_runtime().expect("[BENCH:crit] Wasmtime runtime setup failed");
+    /* std::hint::black_box({
+    }); */
 }
 
 #[cfg(feature = "dhat-runtime")]
 fn native_setup() {
     let _profiler = dhat::Profiler::builder().file_name("native_setup.json").build();
-    std::hint::black_box(native_impl::setup());
+    let _ = native_impl::setup();
+    /* std::hint::black_box(); */
 }
 
 fn main() {
@@ -67,7 +68,9 @@ fn main() {
         wasmtime_setup();
     }
 
-    native_pingpong();
-    wamr_pingpong();
-    wasmtime_pingpong();
+    {
+        native_pingpong();
+        wamr_pingpong();
+        wasmtime_pingpong();
+    }
 }
