@@ -40,22 +40,7 @@ fn native_pingpong() {
 #[cfg(feature = "dhat-runtime")]
 fn wamr_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wamr_setup.json").build();
-    let (runtime, module, instance, function) = wamr_impl
-        ::setup_runtime()
-        .expect("[BENCH:dhat] WAMR runtime setup failed");
-
-    // Stap voor stap droppen om te zien waar het misgaat:
-    drop(function); // Eerst function
-    println!("Function dropped OK");
-
-    drop(instance); // Dan instance (jouw DroppableInstance)
-    println!("Instance dropped OK");
-
-    drop(module); // Dan module
-    println!("Module dropped OK");
-
-    drop(runtime); // Tenslotte runtime
-    println!("Runtime dropped OK");
+    let _ = wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed");
 }
 
 #[cfg(feature = "dhat-runtime")]
