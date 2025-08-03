@@ -48,9 +48,9 @@ fn wamr_setup() {
 #[cfg(feature = "dhat-runtime")]
 fn wasmtime_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wasmtime_setup.json").build();
-    let (_rt, _mod, _instance, _f) = wamr_impl
+    let (_rt, _mod) = wasmtime_impl
         ::setup_runtime()
-        .expect("[BENCH:dhat] WAMR runtime setup failed");
+        .expect("[BENCH:dhat] Wasmtime runtime setup failed");
 }
 
 #[cfg(feature = "dhat-runtime")]

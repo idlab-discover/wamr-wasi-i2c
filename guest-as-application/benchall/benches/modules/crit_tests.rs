@@ -8,7 +8,11 @@ pub fn bench_setup_comparison(c: &mut Criterion) {
     });
 
     group.bench_function("WAMR", |b| {
-        b.iter(wamr_impl::setup_runtime);
+        b.iter(|| {
+            let (_rt, _mod, _instance, _f) = wamr_impl
+                ::setup_runtime()
+                .expect("[BENCH:crit] Wamr Setup Failed");
+        });
     });
 
     group.bench_function("Wasmtime", |b| {
