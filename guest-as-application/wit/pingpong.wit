@@ -4,7 +4,7 @@ world pingpong {
 	import wasi:i2c/i2c;
 	use wasi:i2c/i2c.{i2c};
 
-	import get-i2c-bus: func(bus-number: u32) -> i2c;
+	import get-i2c-bus: func() -> i2c;
 
 	export run: func();
 }
