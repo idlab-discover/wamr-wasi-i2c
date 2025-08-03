@@ -1,8 +1,6 @@
-use wamr_impl::{ run_guest_function, setup_module, setup_module_instance, setup_runtime };
+use wamr_impl::{ setup_runtime, run_pingpong };
 
 fn main() {
-    let runtime = setup_runtime().expect("Oeps");
-    let module = setup_module(&runtime).expect("Oeps");
-    let instance = setup_module_instance(&runtime, &module).expect("Oeps");
-    run_guest_function(&instance).expect("Oeps");
+    let (_runtime, _module, instance) = setup_runtime().expect("Oeps");
+    run_pingpong(&instance).expect("Oeps");
 }

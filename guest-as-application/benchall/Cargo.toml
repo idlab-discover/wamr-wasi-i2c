@@ -8,6 +8,7 @@ wamr-rust-sdk = { git = "https://github.com/bytecodealliance/wamr-rust-sdk", tag
 dhat = "0.3.3"
 wamr_impl = { path = "../wamr_impl" }
 native_impl = { path = "../native_impl" }
+wasmtime_impl = { path = "../wasmtime_impl" }
 
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"]}
@@ -18,7 +19,7 @@ debug = true
 
 [[bin]]
 name = "bench_dhat"
-path = "src/dhat.rs"
+path = "src/main.rs"
 bench = false
 
 # [[bin]]
@@ -30,3 +31,6 @@ bench = false
 name = "bench_crit"
 harness = false
 bench = true
+
+[features]
+dhat-heap = []

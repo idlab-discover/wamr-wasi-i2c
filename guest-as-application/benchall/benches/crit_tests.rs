@@ -1,23 +1,30 @@
 use criterion::{ Criterion };
 
-use wamr_rust_sdk::{ module::Module, runtime::Runtime };
-
-fn setup_wamr() -> (Runtime, Module, wamr_impl::DroppableInstance) {
-    // Doe setup eenmalig buiten de benchmark
-    let runtime = wamr_impl::setup_runtime().unwrap();
-    let module = wamr_impl::setup_module(&runtime).unwrap();
-    let instance = wamr_impl::setup_module_instance(&runtime, &module).unwrap();
-    (runtime, module, instance)
-}
-
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let (_runtime, _module, instance) = setup_wamr();
-    let mut native_hw = native_impl::setup();
-
+    let (_wamr_runtime, _wamr_module, wamr_instance) = wamr_impl
+        ::setup_runtime()
+        .expect("[BENCH:crit] Wamr runtime setup failed");
     c.bench_function("WAMR Ping Pong", |b| {
-        b.iter(|| { std::hint::black_box(wamr_impl::run_guest_function(&instance).unwrap()) })
+        b.iter(|| {
+            std::hint::black_box(
+                wamr_impl::run_pingpong(&wamr_instance).expect("[BENCH:crit] Wamr pingpong failed")
+            )
+        })
     });
+
+    let mut native_hw = native_impl::setup();
     c.bench_function("Native Ping Pong", |b| {
         b.iter(|| { std::hint::black_box(native_impl::pingpong(&mut native_hw)) })
+    });
+
+    let (wasmtime_instance, mut wasmtime_store) = wasmtime_impl
+        ::setup_runtime()
+        .expect("[BENCH:crit] Wasmtime runtime setup failed");
+    c.bench_function("Wasmtime Ping Pong", |b| {
+        b.iter(|| {
+            std::hint::black_box(
+                wasmtime_impl::run_pingpong(&wasmtime_instance, &mut wasmtime_store)
+            )
+        })
     });
 }
