@@ -43,11 +43,6 @@ pub fn setup_runtime() -> Result<(Runtime, Module, DroppableInstance, Function),
     path_buffer.push("guestp1.wasm");
     let module = Module::from_file(&runtime, path_buffer.as_path())?;
     let instance = DroppableInstance::new(&runtime, &module, 1024 * 64)?;
-    #[cfg(debug_assertions)]
-    {
-        // Verify dat de pointers consistent zijn
-        println!("Instance pointer: {:p}", instance.instance.get_inner_instance());
-    }
     let function = Function::find_export_func(&instance.instance, "_start")?;
     Ok((runtime, module, instance, function))
 }

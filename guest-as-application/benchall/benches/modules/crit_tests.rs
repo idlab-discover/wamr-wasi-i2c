@@ -23,7 +23,7 @@ pub fn bench_setup_comparison(c: &mut Criterion) {
 }
 
 pub fn bench_cold_pingpong_comparison(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Ping Pong Execution");
+    let mut group = c.benchmark_group("Cold Ping Pong Execution");
 
     group.bench_function("Native", |b| {
         b.iter_batched(
@@ -60,31 +60,26 @@ pub fn bench_cold_pingpong_comparison(c: &mut Criterion) {
 
 pub fn bench_hot_pingpong_comparison(c: &mut Criterion) {
     let mut native_hw = native_impl::setup();
-    c.bench_function("Native Ping Pong", |b| {
-        b.iter(|| { std::hint::black_box(native_impl::pingpong(&mut native_hw)) })
-    });
-
     let (_rt, _mod, wamr_instance, func) = wamr_impl
         ::setup_runtime()
         .expect("[BENCH:crit] Wamr runtime setup failed");
-    c.bench_function("WAMR Ping Pong", |b| {
-        b.iter(|| {
-            std::hint::black_box(
-                wamr_impl
-                    ::run_pingpong(&wamr_instance, &func)
-                    .expect("[BENCH:crit] Wamr pingpong failed")
-            )
-        })
-    });
-
     let (wasmtime_instance, mut wasmtime_store) = wasmtime_impl
         ::setup_runtime()
         .expect("[BENCH:crit] Wasmtime runtime setup failed");
-    c.bench_function("Wasmtime Ping Pong", |b| {
+
+    let mut group = c.benchmark_group("Hot Ping Pong Execution");
+
+    group.bench_function("Native", |b| { b.iter(|| { native_impl::pingpong(&mut native_hw) }) });
+    group.bench_function("WAMR", |b| {
         b.iter(|| {
-            std::hint::black_box(
-                wasmtime_impl::run_pingpong(&wasmtime_instance, &mut wasmtime_store)
-            )
+            wamr_impl
+                ::run_pingpong(&wamr_instance, &func)
+                .expect("[BENCH:crit] Wamr pingpong failed")
         })
     });
+    group.bench_function("Wasmtime", |b| {
+        b.iter(|| { wasmtime_impl::run_pingpong(&wasmtime_instance, &mut wasmtime_store) })
+    });
+
+    group.finish();
 }
