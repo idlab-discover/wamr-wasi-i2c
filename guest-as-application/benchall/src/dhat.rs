@@ -48,16 +48,15 @@ fn wamr_setup() {
 #[cfg(feature = "dhat-runtime")]
 fn wasmtime_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wasmtime_setup.json").build();
-    let _ = wasmtime_impl::setup_runtime().expect("[BENCH:crit] Wasmtime runtime setup failed");
-    /* std::hint::black_box({
-    }); */
+    let (_rt, _mod, _instance, _f) = wamr_impl
+        ::setup_runtime()
+        .expect("[BENCH:dhat] WAMR runtime setup failed");
 }
 
 #[cfg(feature = "dhat-runtime")]
 fn native_setup() {
     let _profiler = dhat::Profiler::builder().file_name("native_setup.json").build();
     let _ = native_impl::setup();
-    /* std::hint::black_box(); */
 }
 
 fn main() {
