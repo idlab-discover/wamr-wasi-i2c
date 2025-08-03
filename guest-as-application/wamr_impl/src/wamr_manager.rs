@@ -4,6 +4,7 @@ use wamr_rust_sdk::{
     instance::Instance,
     module::Module,
     runtime::Runtime,
+    sys::WASMModuleInstanceCommon,
     value::WasmValue,
     RuntimeError,
 };
@@ -11,11 +12,19 @@ use wamr_rust_sdk::{
 use crate::{ host_functions, permission_manager::I2C_PERMISSIONS_MANAGER };
 pub struct DroppableInstance {
     pub instance: Instance,
+    identifier: *const WASMModuleInstanceCommon,
+}
+impl DroppableInstance {
+    fn new(runtime: &Runtime, module: &Module, stack_size: u32) -> Result<Self, RuntimeError> {
+        let instance = Instance::new(runtime, module, stack_size)?;
+        let identifier = instance.get_inner_instance() as *const WASMModuleInstanceCommon;
+        Ok(DroppableInstance { instance, identifier })
+    }
 }
 
 impl Drop for DroppableInstance {
     fn drop(&mut self) {
-        I2C_PERMISSIONS_MANAGER.lock().unwrap().close_instance(self.instance.get_inner_instance());
+        I2C_PERMISSIONS_MANAGER.lock().unwrap().close_instance(self.identifier);
     }
 }
 
@@ -33,7 +42,12 @@ pub fn setup_runtime() -> Result<(Runtime, Module, DroppableInstance, Function),
     path_buffer.push("wasmodules");
     path_buffer.push("guestp1.wasm");
     let module = Module::from_file(&runtime, path_buffer.as_path())?;
-    let instance = DroppableInstance { instance: Instance::new(&runtime, &module, 1024 * 64)? };
+    let instance = DroppableInstance::new(&runtime, &module, 1024 * 64)?;
+    #[cfg(debug_assertions)]
+    {
+        // Verify dat de pointers consistent zijn
+        println!("Instance pointer: {:p}", instance.instance.get_inner_instance());
+    }
     let function = Function::find_export_func(&instance.instance, "_start")?;
     Ok((runtime, module, instance, function))
 }

@@ -15,6 +15,9 @@ pub extern "C" fn close(exec_env: wasm_exec_env_t, handle: I2cResourceHandle) {
         return;
     }
 
+    #[cfg(debug_assertions)]
+    println!("Module inst pointer: {:p}", module_inst);
+
     let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
     perm_manager.close_handle(module_inst, handle);
 }
@@ -25,6 +28,9 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
         eprintln!("Host: Failed to get module instance");
         return 0;
     }
+
+    #[cfg(debug_assertions)]
+    println!("Module inst pointer: {:p}", module_inst);
 
     let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
     let handle = perm_manager.open_handle(module_inst);
