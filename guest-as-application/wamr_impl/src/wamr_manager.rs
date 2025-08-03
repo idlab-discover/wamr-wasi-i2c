@@ -19,7 +19,7 @@ impl Drop for DroppableInstance {
     }
 }
 
-pub fn setup_runtime() -> Result<(Runtime, Module, DroppableInstance), RuntimeError> {
+pub fn setup_runtime() -> Result<(DroppableInstance, Function), RuntimeError> {
     // Setup WAMR & register host functions
     let runtime = Runtime::builder()
         .use_system_allocator()
@@ -34,11 +34,14 @@ pub fn setup_runtime() -> Result<(Runtime, Module, DroppableInstance), RuntimeEr
     path_buffer.push("guestp1.wasm");
     let module = Module::from_file(&runtime, path_buffer.as_path())?;
     let instance = DroppableInstance { instance: Instance::new(&runtime, &module, 1024 * 64)? };
-    Ok((runtime, module, instance))
+    let function = Function::find_export_func(&instance.instance, "_start")?;
+    Ok((instance, function))
 }
 
-pub fn run_pingpong(instance: &DroppableInstance) -> Result<WasmValue, RuntimeError> {
-    let function = Function::find_export_func(&instance.instance, "_start")?;
+pub fn run_pingpong(
+    instance: &DroppableInstance,
+    function: &Function
+) -> Result<WasmValue, RuntimeError> {
     let params: Vec<WasmValue> = vec![];
     let ret_val = function.call(&instance.instance, &params)?;
     Ok(ret_val)

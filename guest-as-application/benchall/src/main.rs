@@ -6,14 +6,12 @@ use dhat;
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 fn wamr_test() {
-    let (_runtime, _module, instance) = wamr_impl
-        ::setup_runtime()
-        .expect("[BENCH:dhat] Wamr runtime setup failed");
+    let (instance, f) = wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed");
 
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::builder().file_name("wamr_test.json").build();
 
-    wamr_impl::run_pingpong(&instance).expect("[BENCH:dhat] Wamr pingpong failed");
+    wamr_impl::run_pingpong(&instance, &f).expect("[BENCH:dhat] WAMR pingpong failed");
 }
 
 fn wasmtime_test() {
