@@ -17,9 +17,6 @@ pub extern "C" fn close(exec_env: wasm_exec_env_t, handle: I2cResourceHandle) {
 
     let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
     perm_manager.close_handle(module_inst, handle);
-
-    // println!("Host: Closed I2C handle {} for module instance {:p}", handle, module_inst);
-    // println!("{:?}", perm_manager);
 }
 
 pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
@@ -32,9 +29,6 @@ pub extern "C" fn open(exec_env: wasm_exec_env_t) -> I2cResourceHandle {
     let mut perm_manager = I2C_PERMISSIONS_MANAGER.lock().unwrap();
     let handle = perm_manager.open_handle(module_inst);
 
-    // println!("Host: Created I2C handle {} for module instance {:p}", handle, module_inst);
-    // println!("{:?}", perm_manager);
-
     handle
 }
 
@@ -45,13 +39,6 @@ pub extern "C" fn write(
     len: usize,
     buffer_offset: usize
 ) -> u8 {
-    println!(
-        "Host: i2c_write called - handle: {}, address: 0x{:04x}, len: {}, buffer_ptr: {:?}",
-        handle,
-        addr,
-        len,
-        buffer_offset
-    );
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
@@ -93,7 +80,6 @@ pub extern "C" fn write(
         return ErrorCode::Other.into();
     }
 
-    println!("Host: Write completed: {:?}", res);
     ErrorCode::None.into()
 }
 
@@ -104,7 +90,6 @@ pub extern "C" fn read(
     len: usize,
     buffer_ptr: u32
 ) -> u8 {
-    println!("Host: i2c_read called - handle: {}, address: 0x{:04x}, len: {}", handle, addr, len);
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
@@ -153,6 +138,5 @@ pub extern "C" fn read(
             return ErrorCode::Other.into();
         }
     }
-    println!("Host: Read completed: {:?}", read_buffer);
     ErrorCode::None.into()
 }

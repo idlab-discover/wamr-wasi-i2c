@@ -49,8 +49,6 @@ impl wasi::i2c::i2c::HostI2c for HostState {
         address: wasi::i2c::i2c::Address,
         len: u64
     ) -> Result<Vec<u8>, wasi::i2c::i2c::ErrorCode> {
-        println!("[HOST] I2C read from address 0x{:04x}, len: {}", address, len);
-
         let resource_id = res.rep();
         let i2c_res = self.i2c_devices.get(&resource_id).ok_or(wasi::i2c::i2c::ErrorCode::Other)?;
 
@@ -67,10 +65,7 @@ impl wasi::i2c::i2c::HostI2c for HostState {
         let addr_7bit = (address & 0x7f) as u8;
 
         match i2c.read(addr_7bit, &mut buffer) {
-            Ok(_) => {
-                println!("[HOST] Read successful: {:?}", buffer);
-                Ok(buffer)
-            }
+            Ok(_) => { Ok(buffer) }
             Err(e) => {
                 let i2c_err = match e.kind() {
                     embedded_hal::i2c::ErrorKind::NoAcknowledge(no_ack_src) =>
@@ -94,7 +89,7 @@ impl wasi::i2c::i2c::HostI2c for HostState {
                     embedded_hal::i2c::ErrorKind::Overrun => wasi::i2c::i2c::ErrorCode::Overrun,
                     _ => wasi::i2c::i2c::ErrorCode::Other,
                 };
-                println!("[HOST] I2C read error: {:?}", i2c_err);
+                eprintln!("[HOST] I2C read error: {:?}", i2c_err);
                 Err(i2c_err)
             }
         }
@@ -106,8 +101,6 @@ impl wasi::i2c::i2c::HostI2c for HostState {
         address: wasi::i2c::i2c::Address,
         data: Vec<u8>
     ) -> Result<(), wasi::i2c::i2c::ErrorCode> {
-        println!("[HOST] I2C write to address 0x{:04x}, data: {:?}", address, data);
-
         let resource_id = res.rep();
         let i2c_res = self.i2c_devices.get(&resource_id).ok_or(wasi::i2c::i2c::ErrorCode::Other)?;
 
@@ -122,10 +115,7 @@ impl wasi::i2c::i2c::HostI2c for HostState {
         let addr_7bit = (address & 0x7f) as u8;
 
         match i2c.write(addr_7bit, &data) {
-            Ok(_) => {
-                println!("[HOST] Write successful");
-                Ok(())
-            }
+            Ok(_) => { Ok(()) }
             Err(e) => {
                 let i2c_err = match e.kind() {
                     embedded_hal::i2c::ErrorKind::NoAcknowledge(no_ack_src) =>
@@ -149,7 +139,6 @@ impl wasi::i2c::i2c::HostI2c for HostState {
                     embedded_hal::i2c::ErrorKind::Overrun => wasi::i2c::i2c::ErrorCode::Overrun,
                     _ => wasi::i2c::i2c::ErrorCode::Other,
                 };
-                println!("[HOST] I2C write error: {:?}", i2c_err);
                 Err(i2c_err)
             }
         }
@@ -159,7 +148,6 @@ impl wasi::i2c::i2c::HostI2c for HostState {
         &mut self,
         rep: Resource<wasi::i2c::i2c::I2c>
     ) -> std::result::Result<(), wasmtime::Error> {
-        println!("[HOST] I2C resource dropped");
         self.i2c_devices.remove(&rep.rep());
         Ok(())
     }
@@ -168,7 +156,6 @@ impl wasi::i2c::i2c::HostI2c for HostState {
 // Implementeer de get_i2c_bus import
 impl bindings::PingpongImports for HostState {
     fn get_i2c_bus(&mut self) -> Resource<wasi::i2c::i2c::I2c> {
-        println!("[HOST] Called get_i2c_bus");
         let dev = I2cResourceCtx::new();
         let id = self.next_i2c_id;
         self.next_i2c_id += 1;
