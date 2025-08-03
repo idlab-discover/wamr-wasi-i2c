@@ -19,7 +19,7 @@ impl Drop for DroppableInstance {
     }
 }
 
-pub fn setup_runtime() -> Result<(DroppableInstance, Function), RuntimeError> {
+pub fn setup_runtime() -> Result<(Runtime, Module, DroppableInstance, Function), RuntimeError> {
     // Setup WAMR & register host functions
     let runtime = Runtime::builder()
         .use_system_allocator()
@@ -35,7 +35,7 @@ pub fn setup_runtime() -> Result<(DroppableInstance, Function), RuntimeError> {
     let module = Module::from_file(&runtime, path_buffer.as_path())?;
     let instance = DroppableInstance { instance: Instance::new(&runtime, &module, 1024 * 64)? };
     let function = Function::find_export_func(&instance.instance, "_start")?;
-    Ok((instance, function))
+    Ok((runtime, module, instance, function))
 }
 
 pub fn run_pingpong(

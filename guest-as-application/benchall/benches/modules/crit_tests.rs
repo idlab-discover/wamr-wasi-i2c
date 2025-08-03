@@ -34,7 +34,7 @@ pub fn bench_cold_pingpong_comparison(c: &mut Criterion) {
     group.bench_function("WAMR", |b| {
         b.iter_batched(
             || wamr_impl::setup_runtime().expect("[BENCH:crit] Wamr Setup Failed"),
-            |(inst, f)| {
+            |(_rt, _mod, inst, f)| {
                 let _ = wamr_impl::run_pingpong(&inst, &f);
             },
             BatchSize::SmallInput
@@ -60,7 +60,7 @@ pub fn bench_hot_pingpong_comparison(c: &mut Criterion) {
         b.iter(|| { std::hint::black_box(native_impl::pingpong(&mut native_hw)) })
     });
 
-    let (wamr_instance, func) = wamr_impl
+    let (_rt, _mod, wamr_instance, func) = wamr_impl
         ::setup_runtime()
         .expect("[BENCH:crit] Wamr runtime setup failed");
     c.bench_function("WAMR Ping Pong", |b| {

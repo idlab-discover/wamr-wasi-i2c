@@ -6,7 +6,9 @@ use dhat;
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 fn wamr_pingpong() {
-    let (instance, f) = wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed");
+    let (_rt, _mod, instance, f) = wamr_impl
+        ::setup_runtime()
+        .expect("[BENCH:dhat] WAMR runtime setup failed");
 
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::builder().file_name("wamr_pingpong.json").build();
