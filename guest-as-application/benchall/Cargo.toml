@@ -19,7 +19,7 @@ debug = true
 
 [[bin]]
 name = "bench_dhat"
-path = "src/main.rs"
+path = "src/dhat.rs"
 bench = false
 
 # [[bin]]
