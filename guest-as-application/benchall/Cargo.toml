@@ -34,3 +34,4 @@ bench = true
 
 [features]
 dhat-heap = []
+dhat-runtime = []

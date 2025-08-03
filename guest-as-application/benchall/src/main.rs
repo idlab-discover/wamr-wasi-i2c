@@ -5,38 +5,67 @@ use dhat;
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
-fn wamr_test() {
+fn wamr_pingpong() {
     let (instance, f) = wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed");
 
     #[cfg(feature = "dhat-heap")]
-    let _profiler = dhat::Profiler::builder().file_name("wamr_test.json").build();
+    let _profiler = dhat::Profiler::builder().file_name("wamr_pingpong.json").build();
 
     wamr_impl::run_pingpong(&instance, &f).expect("[BENCH:dhat] WAMR pingpong failed");
 }
 
-fn wasmtime_test() {
+fn wasmtime_pingpong() {
     let (instance, mut store) = wasmtime_impl
         ::setup_runtime()
         .expect("[BENCH:crit] Wasmtime runtime setup failed");
 
     #[cfg(feature = "dhat-heap")]
-    let _profiler = dhat::Profiler::builder().file_name("wasmtime_test.json").build();
+    let _profiler = dhat::Profiler::builder().file_name("wasmtime_pingpong.json").build();
     wasmtime_impl
         ::run_pingpong(&instance, &mut store)
         .expect("[BENCH:dhat] Wasmtime pingpong failed");
 }
 
-fn native_test() {
+fn native_pingpong() {
     let mut hw = native_impl::setup();
 
     #[cfg(feature = "dhat-heap")]
-    let _profiler = dhat::Profiler::builder().file_name("native_test.json").build();
+    let _profiler = dhat::Profiler::builder().file_name("native_pingpong.json").build();
 
     native_impl::pingpong(&mut hw);
 }
 
+#[cfg(feature = "dhat-runtime")]
+fn wamr_setup() {
+    let _profiler = dhat::Profiler::builder().file_name("wamr_setup.json").build();
+    std::hint::black_box({
+        wamr_impl::setup_runtime().expect("[BENCH:dhat] WAMR runtime setup failed")
+    });
+}
+
+#[cfg(feature = "dhat-runtime")]
+fn wasmtime_setup() {
+    let _profiler = dhat::Profiler::builder().file_name("wasmtime_setup.json").build();
+    std::hint::black_box({
+        wasmtime_impl::setup_runtime().expect("[BENCH:crit] Wasmtime runtime setup failed")
+    });
+}
+
+#[cfg(feature = "dhat-runtime")]
+fn native_setup() {
+    let _profiler = dhat::Profiler::builder().file_name("native_setup.json").build();
+    std::hint::black_box(native_impl::setup());
+}
+
 fn main() {
-    native_test();
-    wamr_test();
-    wasmtime_test();
+    #[cfg(feature = "dhat-runtime")]
+    {
+        native_setup();
+        wamr_setup();
+        wasmtime_setup();
+    }
+
+    native_pingpong();
+    wamr_pingpong();
+    wasmtime_pingpong();
 }
