@@ -20,7 +20,7 @@ build-p2-guest:
 	cp "{{dir}}/wasip2-i2c-guest/target/wasm32-wasip2/release/wasip2_i2c_guest.wasm" "./target/wasmodules/guestp2.wasm"
 
 wasmtime: (build-p2-guest)
-	cd "{{dir}}/wasmtime_impl" && cargo build --target "{{pi_arch}}" --release
+	cd "{{dir}}/wasmtime_impl" && cargo build --target "{{pi_arch}}" --release -j 4
 	cp "{{dir}}/wasmtime_impl/target/{{pi_arch}}/release/wasmtime_impl" "./target/hostp2"
 
 wamr: (build-p1-guest)
