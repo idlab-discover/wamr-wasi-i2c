@@ -71,6 +71,7 @@ fn main() {
     }
 
     {
+        // cargo flamegraph zal de native_pingpong nooit opmerken omdat deze magnitudes sneller is dan zelfs de tijd om het proces te starten, waardoor dit gezien wordt als noise en dus niet wordt opgenomen
         native_pingpong();
         wamr_pingpong();
         wasmtime_pingpong();
