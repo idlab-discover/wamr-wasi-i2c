@@ -22,11 +22,6 @@ name = "bench_dhat"
 path = "src/dhat.rs"
 bench = false
 
-[[bin]]
-name = "bench_pprof"
-bench = false
-path = "src/pprof.rs"
-
 # Run compiled benches with ./bench --bench
 # Cargo adds this argument automatically to the executable when running cargo bench
 # and criterion needs this argument
@@ -38,4 +33,4 @@ bench = true
 [features]
 dhat-heap = []
 dhat-runtime = []
-pprof-runtime = []
+pprof-flamegraph = []

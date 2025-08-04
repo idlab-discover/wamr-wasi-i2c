@@ -70,10 +70,23 @@ fn main() {
         wasmtime_setup();
     });
 
-    // cargo flamegraph zal de native_pingpong nooit opmerken omdat deze magnitudes sneller is dan zelfs de tijd om het proces te starten, waardoor dit gezien wordt als noise en dus niet wordt opgenomen
+    #[cfg(
+        all(feature = "pprof-flamegraph", not(feature = "dhat-runtime"), not(feature = "dhat-heap"))
+    )]
+    let guard = pprof::ProfilerGuardBuilder::default().frequency(1000).build().unwrap();
+
+    // flamegraph zal de native_pingpong nooit opmerken omdat deze magnitudes sneller is dan zelfs de tijd om het proces te starten, waardoor dit gezien wordt als noise en dus niet wordt opgenomen
     std::hint::black_box({
         native_pingpong();
         wamr_pingpong();
         wasmtime_pingpong();
     });
+
+    #[cfg(
+        all(feature = "pprof-flamegraph", not(feature = "dhat-runtime"), not(feature = "dhat-heap"))
+    )]
+    if let Ok(report) = guard.report().build() {
+        let file = File::create("all_flame.svg").unwrap();
+        report.flamegraph(file).unwrap();
+    };
 }
