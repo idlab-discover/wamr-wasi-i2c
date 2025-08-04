@@ -16,16 +16,16 @@ fn wamr_pingpong() {
         ::setup_runtime()
         .expect("[BENCH:pprof] WAMR runtime setup failed");
 
-    let _guard = get_guard();
+    /* let _guard = get_guard(); */
 
     wamr_impl::run_pingpong(&instance, &f).expect("[BENCH:pprof] WAMR pingpong failed");
 
-    if let Ok(report) = _guard.report().build() {
+    /* if let Ok(report) = _guard.report().build() {
         let file = File::create("wamr_flame.svg").unwrap();
         let mut options = pprof::flamegraph::Options::default();
         options.image_width = Some(2500);
         report.flamegraph_with_options(file, &mut options).unwrap();
-    }
+    } */
 }
 
 fn wasmtime_pingpong() {
@@ -33,35 +33,35 @@ fn wasmtime_pingpong() {
         ::setup_runtime()
         .expect("[BENCH:crit] Wasmtime runtime setup failed");
 
-    let _guard = std::hint::black_box(get_guard());
+    // let _guard = std::hint::black_box(get_guard());
 
     wasmtime_impl
         ::run_pingpong(&instance, &mut store)
         .expect("[BENCH:pprof] Wasmtime pingpong failed");
 
-    if let Ok(report) = _guard.report().build() {
+    /* if let Ok(report) = _guard.report().build() {
         let file = File::create("wasmtime_flame.svg").unwrap();
         let mut options = pprof::flamegraph::Options::default();
         options.image_width = Some(2500);
         report.flamegraph_with_options(file, &mut options).unwrap();
-    }
+    } */
 }
 
 fn native_pingpong() {
     let mut hw = native_impl::setup();
 
-    let _guard = std::hint::black_box(get_guard());
+    // let _guard = std::hint::black_box(get_guard());
 
     native_impl::pingpong(&mut hw);
 
-    if let Ok(report) = _guard.report().build() {
+    /* if let Ok(report) = _guard.report().build() {
         println!("Generating native_flame: {:?}", report);
 
         let file = File::create("native_flame.svg").unwrap();
         let mut options = pprof::flamegraph::Options::default();
         options.image_width = Some(2500);
         report.flamegraph_with_options(file, &mut options).unwrap();
-    }
+    } */
 }
 
 #[cfg(feature = "pprof-runtime")]
