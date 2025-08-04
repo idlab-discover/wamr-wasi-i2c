@@ -23,9 +23,9 @@ path = "src/dhat.rs"
 bench = false
 
 [[bin]]
-name = "bench_perf"
+name = "bench_pprof"
 bench = false
-path = "src/perf.rs"
+path = "src/pprof.rs"
 
 # Run compiled benches with ./bench --bench
 # Cargo adds this argument automatically to the executable when running cargo bench
