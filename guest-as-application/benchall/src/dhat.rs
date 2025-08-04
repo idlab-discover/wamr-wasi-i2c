@@ -1,3 +1,6 @@
+#[cfg(all(feature = "pprof-flamegraph", not(feature = "dhat-runtime"), not(feature = "dhat-heap")))]
+use std::fs::File;
+
 #[cfg(any(feature = "dhat-runtime", feature = "dhat-heap"))]
 use dhat;
 
