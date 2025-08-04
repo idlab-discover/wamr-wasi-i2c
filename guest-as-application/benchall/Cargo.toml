@@ -9,10 +9,10 @@ dhat = "0.3.3"
 wamr_impl = { path = "../wamr_impl" }
 native_impl = { path = "../native_impl" }
 wasmtime_impl = { path = "../wasmtime_impl" }
+pprof = { version = "0.15", features = ["flamegraph"] }
 
 [dev-dependencies]
 criterion = { version = "0.7.0", features = ["html_reports"]}
-# pprof = { version = "0.15", features = ["flamegraph"] }
 
 [profile.release]
 debug = true
@@ -22,11 +22,14 @@ name = "bench_dhat"
 path = "src/dhat.rs"
 bench = false
 
-# [[bin]]
-# name = "bench_perf"
-# bench = false
-# path = "src/perf.rs"
+[[bin]]
+name = "bench_perf"
+bench = false
+path = "src/perf.rs"
 
+# Run compiled benches with ./bench --bench
+# Cargo adds this argument automatically to the executable when running cargo bench
+# and criterion needs this argument
 [[bench]]
 name = "bench_crit"
 harness = false
@@ -35,3 +38,4 @@ bench = true
 [features]
 dhat-heap = []
 dhat-runtime = []
+pprof-runtime = []
