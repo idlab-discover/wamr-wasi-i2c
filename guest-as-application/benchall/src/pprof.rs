@@ -97,10 +97,19 @@ fn main() {
         wasmtime_setup();
     });
 
+    let guard = ProfilerGuard::new(1000).unwrap();
     std::hint::black_box({
         println!("Starting pprof runs");
         native_pingpong();
         wamr_pingpong();
         wasmtime_pingpong();
     });
+    if let Ok(report) = guard.report().build() {
+        println!("Generating native_flame: {:?}", report);
+
+        let file = File::create("all_flame.svg").unwrap();
+        let mut options = pprof::flamegraph::Options::default();
+        options.image_width = Some(2500);
+        report.flamegraph_with_options(file, &mut options).unwrap();
+    }
 }
