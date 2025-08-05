@@ -1,0 +1,76 @@
+#[cfg(feature = "crit-single")]
+use criterion::{ BatchSize, Criterion };
+
+#[cfg(feature = "crit-wamr")]
+pub fn bench_setup(c: &mut Criterion) {
+    c.bench_function("Setup", |b| {
+        b.iter(|| {
+            let _test = wamr_impl::PingPongRunner::new();
+        });
+    });
+
+    c.bench_function("Cold Pingpong", |b| {
+        b.iter_batched(
+            || { wamr_impl::PingPongRunner::new().unwrap() },
+            |runner| {
+                runner.pingpong();
+            },
+            BatchSize::SmallInput
+        );
+    });
+
+    let wamr_runner = wamr_impl::PingPongRunner::new().unwrap();
+    c.bench_function("Hot Pingpong", |b| {
+        b.iter(|| {
+            wamr_runner.pingpong();
+        })
+    });
+}
+
+#[cfg(feature = "crit-wasmtime")]
+pub fn bench_setup(c: &mut Criterion) {
+    c.bench_function("Setup", |b| {
+        b.iter(|| {
+            let _test = wasmtime_impl::PingPongRunner::new();
+        });
+    });
+
+    c.bench_function("Cold Pingpong", |b| {
+        b.iter_batched(
+            || { wasmtime_impl::PingPongRunner::new().unwrap() },
+            |mut runner| {
+                runner.pingpong();
+            },
+            BatchSize::SmallInput
+        );
+    });
+
+    let mut wasmtime_runner = wasmtime_impl::PingPongRunner::new().unwrap();
+    c.bench_function("Hot Pingpong", |b| {
+        b.iter(|| {
+            wasmtime_runner.pingpong();
+        })
+    });
+}
+
+#[cfg(feature = "crit-native")]
+pub fn bench_setup(c: &mut Criterion) {
+    c.bench_function("Setup", |b| {
+        b.iter(|| {
+            let _test = native_impl::setup();
+        });
+    });
+
+    c.bench_function("Cold Pingpong", |b| {
+        b.iter_batched(
+            || { native_impl::setup() },
+            |mut dev| {
+                native_impl::pingpong(&mut dev);
+            },
+            BatchSize::SmallInput
+        );
+    });
+
+    let mut native_hw = native_impl::setup();
+    c.bench_function("Hot Pingpong", |b| { b.iter(|| { native_impl::pingpong(&mut native_hw) }) });
+}

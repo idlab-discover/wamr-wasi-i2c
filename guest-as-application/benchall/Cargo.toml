@@ -30,7 +30,19 @@ name = "bench_crit"
 harness = false
 bench = true
 
+[[bench]]
+name = "bench_single"
+harness = false
+bench = true
+required-features = ["crit-single"]
+
+
+
 [features]
 dhat-pingpong = []
 dhat-runtime = []
 pprof-flamegraph = []
+crit-wasmtime = ["crit-single"]
+crit-wamr = ["crit-single"]
+crit-native = ["crit-single"]
+crit-single = []
