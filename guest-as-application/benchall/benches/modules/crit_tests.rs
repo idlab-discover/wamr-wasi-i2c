@@ -2,6 +2,7 @@ use criterion::{ BatchSize, Criterion };
 
 pub fn bench_setup_comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("Runtime Setup");
+    group.sampling_mode(criterion::SamplingMode::Linear);
 
     group.bench_function("Native", |b| {
         b.iter(|| {
@@ -26,6 +27,7 @@ pub fn bench_setup_comparison(c: &mut Criterion) {
 
 pub fn bench_cold_pingpong_comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("Cold Ping Pong Execution");
+    group.sampling_mode(criterion::SamplingMode::Linear);
 
     group.bench_function("Native", |b| {
         b.iter_batched(
@@ -66,6 +68,8 @@ pub fn bench_hot_pingpong_comparison(c: &mut Criterion) {
     let mut wasmtime_runner = wasmtime_impl::PingPongRunner::new().unwrap();
 
     let mut group = c.benchmark_group("Hot Ping Pong Execution");
+    group.sampling_mode(criterion::SamplingMode::Linear);
+
     group.bench_function("Native", |b| { b.iter(|| { native_impl::pingpong(&mut native_hw) }) });
     group.bench_function("WAMR", |b| {
         b.iter(|| {

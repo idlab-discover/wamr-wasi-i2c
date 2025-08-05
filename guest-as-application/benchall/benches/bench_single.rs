@@ -7,7 +7,7 @@ use std::time::Duration;
 
 criterion_group! {
 	name = benches;
-    config = Criterion::default().measurement_time(Duration::from_secs(30));
+    config = Criterion::default().measurement_time(Duration::from_secs(30)).warm_up_time(Duration::from_secs(8));
     targets = bench_setup,
 }
 
