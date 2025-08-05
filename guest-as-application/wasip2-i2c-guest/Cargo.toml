@@ -8,7 +8,6 @@ wit-bindgen-rt = { version = "0.43.0", features = ["bitflags"] }
 
 [lib]
 crate-type = ["cdylib"]
-harness = false
 
 [package.metadata.component]
 package = "my:pingpong"
