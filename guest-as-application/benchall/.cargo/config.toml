@@ -6,7 +6,3 @@ linker = "aarch64-linux-musl-gcc"
 
 [env]
 LLVM_LIB_CFG_PATH = "/usr/lib/llvm-18/lib/cmake/llvm"
-# WAMR_BUILD_AOT = "0"
-# WAMR_BUILD_JIT = "0"
-# WAMR_BUILD_INTERP = "1"
-# WAMR_BUILD_FAST_INTERP = "1"

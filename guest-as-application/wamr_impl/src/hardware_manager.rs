@@ -6,5 +6,5 @@ pub struct I2cHardware {
 }
 
 pub static I2C_HARDWARE_MANAGER: LazyLock<Mutex<I2cHardware>> = LazyLock::new(|| {
-    Mutex::new(I2cHardware { bus: I2cdev::new("/dev/i2c-1").expect("Hardware not available") })
+    Mutex::new(I2cHardware { bus: I2cdev::new("/dev/i2c-1").unwrap() })
 });
