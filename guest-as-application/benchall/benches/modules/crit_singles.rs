@@ -6,6 +6,7 @@ pub fn bench_setup(c: &mut Criterion) {
     let mut group = c.benchmark_group("Full");
     group.sampling_mode(criterion::SamplingMode::Linear);
 
+    // b.iter meet ook de tijd dat het neemt om de resource te droppen!
     group.bench_function("Setup", |b| {
         b.iter(|| {
             let _test = wamr_impl::PingPongRunner::new();
@@ -36,6 +37,7 @@ pub fn bench_setup(c: &mut Criterion) {
     let mut group = c.benchmark_group("Full");
     group.sampling_mode(criterion::SamplingMode::Linear);
 
+    // b.iter meet ook de tijd dat het neemt om de resource te droppen!
     group.bench_function("Setup", |b| {
         b.iter(|| {
             let _test = wasmtime_impl::PingPongRunner::new();
@@ -66,6 +68,7 @@ pub fn bench_setup(c: &mut Criterion) {
     let mut group = c.benchmark_group("Full");
     group.sampling_mode(criterion::SamplingMode::Linear);
 
+    // b.iter meet ook de tijd dat het neemt om de resource te droppen!
     group.bench_function("Setup", |b| {
         b.iter(|| {
             let _test = native_impl::setup();
