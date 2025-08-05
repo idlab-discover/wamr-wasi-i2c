@@ -1,5 +1,5 @@
+#[allow(dead_code)]
 mod modules;
-
 use modules::crit_singles::bench_setup;
 
 use criterion::{ criterion_group, criterion_main, Criterion };
