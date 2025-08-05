@@ -1,40 +1,36 @@
-#[cfg(all(feature = "pprof-flamegraph", not(feature = "dhat-runtime"), not(feature = "dhat-heap")))]
+#[cfg(
+    all(feature = "pprof-flamegraph", not(feature = "dhat-runtime"), not(feature = "dhat-pingpong"))
+)]
 use std::fs::File;
 
-#[cfg(any(feature = "dhat-runtime", feature = "dhat-heap"))]
+#[cfg(any(feature = "dhat-runtime", feature = "dhat-pingpong"))]
 use dhat;
 
-#[cfg(any(feature = "dhat-runtime", feature = "dhat-heap"))]
+#[cfg(any(feature = "dhat-runtime", feature = "dhat-pingpong"))]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 fn wamr_pingpong() {
-    let (_rt, _mod, instance, f) = wamr_impl
-        ::setup_runtime()
-        .expect("[BENCH:dhat] WAMR runtime setup failed");
+    let runner = wamr_impl::PingPongRunner::new().unwrap();
 
-    #[cfg(feature = "dhat-heap")]
+    #[cfg(feature = "dhat-pingpong")]
     let _profiler = dhat::Profiler::builder().file_name("wamr_pingpong.json").build();
 
-    wamr_impl::run_pingpong(&instance, &f).expect("[BENCH:dhat] WAMR pingpong failed");
+    runner.pingpong();
 }
 
 fn wasmtime_pingpong() {
-    let (instance, mut store) = wasmtime_impl
-        ::setup_runtime()
-        .expect("[BENCH:crit] Wasmtime runtime setup failed");
+    let mut runner = wasmtime_impl::PingPongRunner::new().unwrap();
 
-    #[cfg(feature = "dhat-heap")]
+    #[cfg(feature = "dhat-pingpong")]
     let _profiler = dhat::Profiler::builder().file_name("wasmtime_pingpong.json").build();
-    wasmtime_impl
-        ::run_pingpong(&instance, &mut store)
-        .expect("[BENCH:dhat] Wasmtime pingpong failed");
+    runner.pingpong();
 }
 
 fn native_pingpong() {
     let mut hw = native_impl::setup();
 
-    #[cfg(feature = "dhat-heap")]
+    #[cfg(feature = "dhat-pingpong")]
     let _profiler = dhat::Profiler::builder().file_name("native_pingpong.json").build();
 
     native_impl::pingpong(&mut hw);
@@ -46,23 +42,19 @@ fn wamr_setup() {
     // TODO: Bespreek: WAMR doet iets heel vreemd: Claude (Rust Conditional Feature Compilation)
     //      Strace geeft weer dat WAMR nog vanalles aan het opzetten zou zijn wanneer we de setup zouden aanroepen via let _ = ...
     //      Dit zou zijn doordat de destructor meteen wordt opgeroepen
-    let (_rt, _mod, _instance, _f) = wamr_impl
-        ::setup_runtime()
-        .expect("[BENCH:dhat] WAMR runtime setup failed");
+    let _runner = wamr_impl::PingPongRunner::new().unwrap();
 }
 
 #[cfg(feature = "dhat-runtime")]
 fn wasmtime_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wasmtime_setup.json").build();
-    let (_rt, _mod) = wasmtime_impl
-        ::setup_runtime()
-        .expect("[BENCH:dhat] Wasmtime runtime setup failed");
+    let _runner = wasmtime_impl::PingPongRunner::new().unwrap();
 }
 
 #[cfg(feature = "dhat-runtime")]
 fn native_setup() {
     let _profiler = dhat::Profiler::builder().file_name("native_setup.json").build();
-    let _ = native_impl::setup();
+    let _test = native_impl::setup();
 }
 
 fn main() {
@@ -74,7 +66,11 @@ fn main() {
     });
 
     #[cfg(
-        all(feature = "pprof-flamegraph", not(feature = "dhat-runtime"), not(feature = "dhat-heap"))
+        all(
+            feature = "pprof-flamegraph",
+            not(feature = "dhat-runtime"),
+            not(feature = "dhat-pingpong")
+        )
     )]
     let guard = pprof::ProfilerGuardBuilder::default().frequency(1000).build().unwrap();
 
@@ -86,7 +82,11 @@ fn main() {
     });
 
     #[cfg(
-        all(feature = "pprof-flamegraph", not(feature = "dhat-runtime"), not(feature = "dhat-heap"))
+        all(
+            feature = "pprof-flamegraph",
+            not(feature = "dhat-runtime"),
+            not(feature = "dhat-pingpong")
+        )
     )]
     if let Ok(report) = guard.report().build() {
         let file = File::create("all_flame.svg").unwrap();

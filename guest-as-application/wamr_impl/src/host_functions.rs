@@ -6,7 +6,7 @@ use wamr_rust_sdk::sys::{
     wasm_runtime_addr_app_to_native,
     wasm_runtime_get_module_inst,
 };
-use wasip1_i2c_lib::common::{ ErrorCode, I2cResourceHandle, I2cAddress };
+use wasip1_i2c_lib::common::{ ErrorCode, I2cAddress, I2cResourceHandle };
 
 pub extern "C" fn close(exec_env: wasm_exec_env_t, handle: I2cResourceHandle) {
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
@@ -42,7 +42,7 @@ pub extern "C" fn write(
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
-        return ErrorCode::Other.into();
+        return ErrorCode::Other.lower();
     }
 
     let can_write = {
@@ -55,14 +55,14 @@ pub extern "C" fn write(
                     handle,
                     module_inst
                 );
-                return ErrorCode::Other.into();
+                return ErrorCode::Other.lower();
             }
         }
     };
 
     if !can_write {
         eprintln!("Host: Access denied - no write permission for handle {}", handle);
-        return ErrorCode::Other.into();
+        return ErrorCode::Other.lower();
     }
 
     let native_buffer = (unsafe {
@@ -70,17 +70,17 @@ pub extern "C" fn write(
     }) as *mut u8;
     if native_buffer.is_null() {
         eprintln!("Host: Invalid buffer pointer");
-        return ErrorCode::Other.into();
+        return ErrorCode::Other.lower();
     }
 
     let res = unsafe { std::slice::from_raw_parts(native_buffer, len) };
     let mut hardware_guard = I2C_HARDWARE_MANAGER.lock().unwrap();
     if let Err(write_err) = hardware_guard.bus.write(addr as u8, res) {
         eprintln!("Host: I2C hardware not initialized: {}", write_err);
-        return ErrorCode::Other.into();
+        return convert_error(write_err).lower();
     }
 
-    ErrorCode::None.into()
+    ErrorCode::None.lower()
 }
 
 pub extern "C" fn read(
@@ -93,7 +93,7 @@ pub extern "C" fn read(
     let module_inst = unsafe { wasm_runtime_get_module_inst(exec_env) };
     if module_inst.is_null() {
         eprintln!("Host: Failed to get module instance");
-        return ErrorCode::Other.into();
+        return ErrorCode::Other.lower();
     }
 
     let can_read = {
@@ -106,14 +106,14 @@ pub extern "C" fn read(
                     handle,
                     module_inst
                 );
-                return ErrorCode::Other.into();
+                return ErrorCode::Other.lower();
             }
         }
     };
 
     if !can_read {
         eprintln!("Host: Access denied - no read permission for handle {}", handle);
-        return ErrorCode::Other.into();
+        return ErrorCode::Other.lower();
     }
 
     let native_buffer = (unsafe {
@@ -121,7 +121,7 @@ pub extern "C" fn read(
     }) as *mut u8;
     if native_buffer.is_null() {
         eprintln!("Host: Invalid buffer pointer");
-        return ErrorCode::Other.into();
+        return ErrorCode::Other.lower();
     }
 
     let mut hardware_guard = I2C_HARDWARE_MANAGER.lock().unwrap();
@@ -133,10 +133,26 @@ pub extern "C" fn read(
                 std::ptr::copy_nonoverlapping::<u8>(read_buffer.as_ptr(), native_buffer, len);
             }
         }
-        Err(_) => {
-            eprintln!("Host: Error: HW Read");
-            return ErrorCode::Other.into();
+        Err(e) => {
+            return convert_error(e).lower();
         }
     }
-    ErrorCode::None.into()
+    ErrorCode::None.lower()
+}
+
+fn convert_error(err: linux_embedded_hal::I2CError) -> ErrorCode {
+    use wasip1_i2c_lib::common::NoAcknowledgeSource;
+    use embedded_hal::i2c::{ Error, ErrorKind as HalCode, NoAcknowledgeSource as HalNoAckS };
+    match err.kind() {
+        HalCode::NoAcknowledge(no_ack_src) =>
+            match no_ack_src {
+                HalNoAckS::Address => ErrorCode::NoAcknowledge(NoAcknowledgeSource::Address),
+                HalNoAckS::Data => ErrorCode::NoAcknowledge(NoAcknowledgeSource::Data),
+                HalNoAckS::Unknown => ErrorCode::NoAcknowledge(NoAcknowledgeSource::Unknown),
+            }
+        HalCode::ArbitrationLoss => ErrorCode::ArbitrationLoss,
+        HalCode::Bus => ErrorCode::Bus,
+        HalCode::Overrun => ErrorCode::Overrun,
+        _ => ErrorCode::Other,
+    }
 }

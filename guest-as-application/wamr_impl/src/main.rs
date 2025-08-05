@@ -1,6 +1,5 @@
-use wamr_impl::{ setup_runtime, run_pingpong };
+use wamr_impl::{ PingPongRunner };
 
 fn main() {
-    let (_runtime, _module, instance, func) = setup_runtime().expect("[WAMR] Runtime Setup Failed");
-    run_pingpong(&instance, &func).expect("[WAMR] Running PingPong Failed");
+    PingPongRunner::new().unwrap().pingpong();
 }

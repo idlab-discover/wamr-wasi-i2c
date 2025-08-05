@@ -15,8 +15,6 @@ impl NoAcknowledgeSource {
             0 => NoAcknowledgeSource::Address,
             1 => NoAcknowledgeSource::Data,
             _ => NoAcknowledgeSource::Unknown,
-
-            // TODO: decide on what to do, panic or Unknown no-ack: _ => panic!("invalid enum discriminant"),
         }
     }
 
@@ -25,28 +23,17 @@ impl NoAcknowledgeSource {
             NoAcknowledgeSource::Address => 0,
             NoAcknowledgeSource::Data => 1,
             _ => 2,
-
-            // TODO: decide on what to do, panic or Unknown no-ack: _ => panic!("invalid enum discriminant"),
         }
     }
 }
 
 #[derive(Debug)]
 pub enum ErrorCode {
-    /// No error occurred. Operation was succesful.
     None,
-    /// Bus error occurred. e.g. A START or a STOP condition is detected and
-    /// is not located after a multiple of 9 SCL clock pulses.
     Bus,
-    /// The arbitration was lost, e.g. electrical problems with the clock signal.
     ArbitrationLoss,
-    /// A bus operation was not acknowledged, e.g. due to the addressed
-    /// device not being available on the bus or the device not being ready
-    /// to process requests at the moment.
     NoAcknowledge(NoAcknowledgeSource),
-    /// The peripheral receive buffer was overrun.
     Overrun,
-    /// A different error occurred.
     Other,
 }
 
@@ -78,35 +65,3 @@ impl ErrorCode {
         }
     }
 }
-
-impl From<ErrorCode> for u8 {
-    fn from(value: ErrorCode) -> Self {
-        ErrorCode::lower(&value)
-    }
-}
-
-/*
-impl From<u8> for ErrorCode {
-    fn from(value: u8) -> Self {
-        ErrorCode::lift(value)
-    }
-}
-
-impl From<u8> for NoAcknowledgeSource {
-    fn from(value: u8) -> Self {
-        NoAcknowledgeSource::lift(value)
-    }
-}
-
-impl Into<u8> for ErrorCode {
-    fn into(self) -> u8 {
-        self.lower()
-    }
-}
-
-impl Into<u8> for NoAcknowledgeSource {
-    fn into(self) -> u8 {
-        self.lower()
-    }
-}
-*/

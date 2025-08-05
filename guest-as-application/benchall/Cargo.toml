@@ -31,6 +31,6 @@ harness = false
 bench = true
 
 [features]
-dhat-heap = []
+dhat-pingpong = []
 dhat-runtime = []
 pprof-flamegraph = []

@@ -20,3 +20,6 @@ target/
 
 .vscode/
 *.code-workspace
+**/wit/*.html
+**/wit/*.md
+**/wit/*.rs

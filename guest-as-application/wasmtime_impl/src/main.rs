@@ -1,10 +1,7 @@
-use wasmtime_impl::{ run_pingpong, setup_runtime };
-
-use anyhow::Result;
+use wasmtime_impl::PingPongRunner;
 
 // Main functie
-fn main() -> Result<()> {
-    let (inst, mut store) = setup_runtime()?;
-    run_pingpong(&inst, &mut store)?;
-    Ok(())
+fn main() {
+    let mut runner = PingPongRunner::new().unwrap();
+    runner.pingpong();
 }
