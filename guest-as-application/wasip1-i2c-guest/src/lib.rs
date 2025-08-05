@@ -1,7 +1,22 @@
+#![no_std]
 #![no_main]
 // no_std niet mogelijk, want we alloceren geheugen in de guest module (in de lib). We zouden ems kunnen gebruiken
 
 use wasip1_i2c_lib::{ common::I2cAddress, guest::I2cResource };
+
+extern crate alloc;
+use lol_alloc::{ AssumeSingleThreaded, FreeListAllocator };
+#[global_allocator]
+static ALLOCATOR: AssumeSingleThreaded<FreeListAllocator> = unsafe {
+    AssumeSingleThreaded::new(FreeListAllocator::new())
+};
+
+use core::panic::PanicInfo;
+#[panic_handler]
+fn panic(_info: &PanicInfo) -> ! {
+    loop {
+    }
+}
 
 #[unsafe(no_mangle)]
 pub extern "C" fn _start() {

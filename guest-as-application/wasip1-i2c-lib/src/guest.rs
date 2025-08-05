@@ -1,6 +1,3 @@
-use std::mem::MaybeUninit;
-use std::mem::transmute;
-
 use crate::common::*;
 
 #[link(wasm_import_module = "host")]
@@ -29,8 +26,13 @@ impl I2cResource {
         Self { handle: unsafe { host_open() } }
     }
 
-    pub fn read(&self, address: I2cAddress, len: usize) -> Result<Vec<u8>, ErrorCode> {
-        let mut read_buffer: Vec<MaybeUninit<u8>> = Vec::with_capacity(len as usize);
+    pub fn read(
+        &self,
+        address: I2cAddress,
+        len: usize
+    ) -> Result<alloc_crate::vec::Vec<u8>, ErrorCode> {
+        pub use alloc_crate::vec::Vec;
+        let mut read_buffer: Vec<core::mem::MaybeUninit<u8>> = Vec::with_capacity(len as usize);
 
         let host_res = unsafe {
             read_buffer.set_len(len as usize);
@@ -38,13 +40,13 @@ impl I2cResource {
         };
 
         let output = match ErrorCode::lift(host_res) {
-            ErrorCode::None => Ok(unsafe { transmute(read_buffer) }),
+            ErrorCode::None => Ok(unsafe { core::mem::transmute(read_buffer) }),
             e => Err(e),
         };
         output
     }
 
-    pub fn write(&self, address: I2cAddress, data: &Vec<u8>) -> Result<(), ErrorCode> {
+    pub fn write(&self, address: I2cAddress, data: &[u8]) -> Result<(), ErrorCode> {
         let host_res = unsafe { host_write(self.handle, address, data.len(), data.as_ptr()) };
 
         match ErrorCode::lift(host_res) {
@@ -61,3 +63,5 @@ impl Drop for I2cResource {
         }
     }
 }
+
+extern crate alloc as alloc_crate;
