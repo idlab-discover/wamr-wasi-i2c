@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-// no_std niet mogelijk, want we alloceren geheugen in de guest module (in de lib). We zouden ems kunnen gebruiken
 
 use wasip1_i2c_lib::{ common::I2cAddress, guest::I2cResource };
 
