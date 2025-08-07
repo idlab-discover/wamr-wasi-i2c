@@ -4,24 +4,22 @@ host_addr := env_var_or_default("PI_HOST", "wasmpi.local")
 user := env_var_or_default("PI_USER", "robin")
 pi_arch := env_var_or_default("PI_ARCH", "aarch64-unknown-linux-musl")
 
-dir := "guest-as-application"
-
 default:
     @just --list
 
 # Build a WASM Module
 [group('Creation: Guest')]
 build-p1:
-	cd "{{dir}}/wasip1-i2c-guest" && cargo build --target wasm32-wasip1 --release
+	cd "wasip1-i2c-guest" && cargo build --target wasm32-wasip1 --release
 	mkdir -p "./target/wasmodules"
-	cp "{{dir}}/wasip1-i2c-guest/target/wasm32-wasip1/release/wasip1_i2c_guest.wasm" "./target/wasmodules/guestp1.wasm"
+	cp "wasip1-i2c-guest/target/wasm32-wasip1/release/wasip1_i2c_guest.wasm" "./target/wasmodules/guestp1.wasm"
 
 # Build a WASM Component
 [group('Creation: Guest')]
 build-p2:
-	cd "{{dir}}/wasip2-i2c-guest" && cargo component build --target wasm32-wasip2 --release
+	cd "wasip2-i2c-guest" && cargo component build --target wasm32-wasip2 --release
 	mkdir -p "./target/wasmodules"
-	cp "{{dir}}/wasip2-i2c-guest/target/wasm32-wasip2/release/wasip2_i2c_guest.wasm" "./target/wasmodules/guestp2.wasm"
+	cp "wasip2-i2c-guest/target/wasm32-wasip2/release/wasip2_i2c_guest.wasm" "./target/wasmodules/guestp2.wasm"
 
 # Build all WASM Guest implementations
 [group('Creation: Guest')]
@@ -30,21 +28,21 @@ guests: (build-p1) (build-p2)
 # Build the Native Host Implementation for the PI Architecture
 [group('Creation: Host')]
 native:
-	cd "{{dir}}/native_impl" && cargo build --target "{{pi_arch}}" --release
+	cd "native_impl" && cargo build --target "{{pi_arch}}" --release
 	mkdir -p "./target/wasmodules"
-	cp "{{dir}}/native_impl/target/{{pi_arch}}/release/native_impl" "./target/hostn"
+	cp "native_impl/target/{{pi_arch}}/release/native_impl" "./target/hostn"
 
 # Build the WAMR Host Implementation for the PI Architecture
 [group('Creation: Host')]
 wamr: (build-p1)
-	cd "{{dir}}/wamr_impl" && cargo build --target "{{pi_arch}}" --release
-	cp "{{dir}}/wamr_impl/target/{{pi_arch}}/release/wamr_run" "./target/hostp1"
+	cd "wamr_impl" && cargo build --target "{{pi_arch}}" --release
+	cp "wamr_impl/target/{{pi_arch}}/release/wamr_run" "./target/hostp1"
 
 # Build the WASMTIME Host Implementation for the PI Architecture
 [group('Creation: Host')]
 wasmtime: (build-p2)
-	cd "{{dir}}/wasmtime_impl" && cargo build --target "{{pi_arch}}" --release -j 4
-	cp "{{dir}}/wasmtime_impl/target/{{pi_arch}}/release/wasmtime_run" "./target/hostp2"
+	cd "wasmtime_impl" && cargo build --target "{{pi_arch}}" --release -j 4
+	cp "wasmtime_impl/target/{{pi_arch}}/release/wasmtime_run" "./target/hostp2"
 
 # Build all Host implementations
 [group('Creation: Host')]
@@ -54,21 +52,21 @@ hosts: (native) (wamr) (wasmtime)
 [group('Creation: Host')]
 bench: (build-p1) (build-p2)
 	mkdir -p "./target/benches"
-	cd "{{dir}}/benchall" && cargo build --all-targets --release --target {{pi_arch}} --features dhat-pingpong,dhat-runtime
-	find "{{dir}}/benchall/target/{{pi_arch}}/release/deps/" -type f -executable -name "bench*" -exec cp "{}" ./target/benches/ \;
-	find "{{dir}}/benchall/target/{{pi_arch}}/release/" -maxdepth 1 -type f -executable -name "bench*" -exec cp "{}" ./target/ \;
+	cd "benchall" && cargo build --all-targets --release --target {{pi_arch}} --features dhat-pingpong,dhat-runtime
+	find "benchall/target/{{pi_arch}}/release/deps/" -type f -executable -name "bench*" -exec cp "{}" ./target/benches/ \;
+	find "benchall/target/{{pi_arch}}/release/" -maxdepth 1 -type f -executable -name "bench*" -exec cp "{}" ./target/ \;
 
 # Build an implementation that just runs all three ways to do the Ping Pong
 [group('Creation: Host')]
 pingpong: (build-p1) (build-p2)
-	cd "{{dir}}/benchall" && cargo build --bin bench_dhat --release --target {{pi_arch}}
-	cp "{{dir}}/benchall/target/{{pi_arch}}/release/bench_dhat" "./target/pingpong_all_three"
+	cd "benchall" && cargo build --bin bench_dhat --release --target {{pi_arch}}
+	cp "benchall/target/{{pi_arch}}/release/bench_dhat" "./target/pingpong_all_three"
 
 # Build a binary that generates the Flamegraph
 [group('Creation: Host')]
 flamegraph: (build-p1) (build-p2)
-	cd "{{dir}}/benchall" && cargo build --bin bench_dhat --release --target {{pi_arch}} --features pprof-flamegraph
-	cp "{{dir}}/benchall/target/{{pi_arch}}/release/bench_dhat" "./target/flamegraph"
+	cd "benchall" && cargo build --bin bench_dhat --release --target {{pi_arch}} --features pprof-flamegraph
+	cp "benchall/target/{{pi_arch}}/release/bench_dhat" "./target/flamegraph"
 
 # Generate binaries for benchall, WAMR and Wasmtime bins and benches
 [group('Creation: Host')]
@@ -87,13 +85,13 @@ deploy:
 # Cargo clean all the different projects
 [group('Other')]
 deepclean: (clean)
-	-cd "{{dir}}/wasip1-i2c-lib" && cargo clean
-	-cd "{{dir}}/wasip1-i2c-guest" && cargo clean
-	-cd "{{dir}}/wasip2-i2c-guest" && cargo clean
-	-cd "{{dir}}/wamr_impl" && cargo clean
-	-cd "{{dir}}/wasmtime_impl" && cargo clean
-	-cd "{{dir}}/native_impl" && cargo clean
-	-cd "{{dir}}/benchall" && cargo clean
+	-cd "wasip1-i2c-lib" && cargo clean
+	-cd "wasip1-i2c-guest" && cargo clean
+	-cd "wasip2-i2c-guest" && cargo clean
+	-cd "wamr_impl" && cargo clean
+	-cd "wasmtime_impl" && cargo clean
+	-cd "native_impl" && cargo clean
+	-cd "benchall" && cargo clean
 
 # Alias for deepclean
 [group('Other')]
