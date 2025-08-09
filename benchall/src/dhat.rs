@@ -39,9 +39,6 @@ fn native_pingpong() {
 #[cfg(feature = "dhat-runtime")]
 fn wamr_setup() {
     let _profiler = dhat::Profiler::builder().file_name("wamr_setup.json").build();
-    // TODO: Bespreek: WAMR doet iets heel vreemd: Claude (Rust Conditional Feature Compilation)
-    //      Strace geeft weer dat WAMR nog vanalles aan het opzetten zou zijn wanneer we de setup zouden aanroepen via let _ = ...
-    //      Dit zou zijn doordat de destructor meteen wordt opgeroepen
     let _runner = wamr_impl::PingPongRunner::new().unwrap();
 }
 
