@@ -1,4 +1,5 @@
-use std::{ collections::HashMap, fmt, sync::{ LazyLock, Mutex } };
+use hashbrown::HashMap;
+use spin::{ Lazy, Mutex };
 
 use wamr_rust_sdk::sys::WASMModuleInstanceCommon;
 use wasip1_i2c_lib::common::I2cResourceHandle;
@@ -62,7 +63,7 @@ impl I2cPermissionsManager {
     }
 }
 
-pub static I2C_PERMISSIONS_MANAGER: LazyLock<Mutex<I2cPermissionsManager>> = LazyLock::new(|| {
+pub static I2C_PERMISSIONS_MANAGER: Lazy<Mutex<I2cPermissionsManager>> = Lazy::new(|| {
     Mutex::new(I2cPermissionsManager {
         instances: HashMap::new(),
         next_handle: 1,
@@ -71,16 +72,3 @@ pub static I2C_PERMISSIONS_MANAGER: LazyLock<Mutex<I2cPermissionsManager>> = Laz
 
 unsafe impl Send for I2cPermissionsManager {}
 unsafe impl Sync for I2cPermissionsManager {}
-
-impl fmt::Debug for I2cPermissionsManager {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "I2cManager {{")?;
-        for (module_ptr, handles) in &self.instances {
-            writeln!(f, "\tHandles for Module @ {:p}:", *module_ptr)?;
-            for (handle, permissions) in handles {
-                writeln!(f, "\t\t{} => {:?}", handle, permissions)?;
-            }
-        }
-        writeln!(f, "}}")
-    }
-}

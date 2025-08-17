@@ -1,4 +1,4 @@
-use std::{ ffi::c_void, path::PathBuf };
+use core::ffi::c_void;
 use wamr_rust_sdk::{
     function::Function,
     instance::Instance,
@@ -9,6 +9,8 @@ use wamr_rust_sdk::{
 };
 
 use crate::{ host_functions, permission_manager::I2C_PERMISSIONS_MANAGER };
+
+extern crate alloc;
 
 // Moet in deze volgorde staan. Rust dropt variabelen in declaratievolgorde = FIFO bij structs, in een functie gebeurd dit omgekeerd: LIFO
 // WAMR heeft weird behaviour wanneer de volgorde omgedraaid is
@@ -31,10 +33,8 @@ impl PingPongRunner {
             .register_host_function("host_close", host_functions::close as *mut c_void)
             .build()?;
 
-        let mut path_buffer = PathBuf::from(".");
-        path_buffer.push("wasmodules");
-        path_buffer.push("guestp1.wasm");
-        let module = Module::from_file(&runtime, path_buffer.as_path())?;
+        const WASM_BYTES: &[u8] = include_bytes!("../wasmodules/guestp1.wasm");
+        let module = Module::from_buf(&runtime, WASM_BYTES, "guestp1.wasm")?;
         let instance = Instance::new(&runtime, &module, 1024 * 64)?;
         let func = Function::find_export_func(&instance, "_start")?;
         Ok(PingPongRunner {
@@ -46,13 +46,13 @@ impl PingPongRunner {
     }
 
     pub fn pingpong(&self) {
-        let params: Vec<WasmValue> = vec![];
+        let params: alloc::vec::Vec<WasmValue> = alloc::vec![];
         self.func.call(&self.instance, &params).unwrap();
     }
 }
 
 impl Drop for PingPongRunner {
     fn drop(&mut self) {
-        I2C_PERMISSIONS_MANAGER.lock().unwrap().close_instance(self.instance.get_inner_instance());
+        I2C_PERMISSIONS_MANAGER.lock().close_instance(self.instance.get_inner_instance());
     }
 }

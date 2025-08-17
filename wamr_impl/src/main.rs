@@ -1,3 +1,4 @@
+#![no_std]
 use wamr_impl::{ PingPongRunner };
 
 fn main() {

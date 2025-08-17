@@ -1,3 +1,4 @@
+#![no_std]
 mod permission_manager;
 mod host_functions;
 mod hardware_manager;
