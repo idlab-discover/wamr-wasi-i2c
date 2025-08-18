@@ -1,9 +1,12 @@
 use embedded_hal::i2c::{ I2c, Error };
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 use wasmtime::component::Resource;
 
 use crate::{ bindings, bindings::wasi, I2C_BUS };
+
+extern crate alloc;
+use alloc::vec::Vec;
 
 #[derive(Clone)]
 struct I2cPermissions {
@@ -54,10 +57,10 @@ impl wasi::i2c::i2c::HostI2c for HostState {
             return Err(wasi::i2c::i2c::ErrorCode::Other);
         }
 
-        let mut buffer = vec![0u8; len as usize];
+        let mut buffer = alloc::vec![0u8; len as usize];
 
         // Lock de I2C device en doe de read
-        let mut i2c = I2C_BUS.lock().unwrap();
+        let mut i2c = I2C_BUS.lock();
 
         // Linux I2C gebruikt 7-bit adressen
         let addr_7bit = (address & 0x7f) as u8;
@@ -82,7 +85,7 @@ impl wasi::i2c::i2c::HostI2c for HostState {
         }
 
         // Lock de I2C device en doe de write
-        let mut i2c = I2C_BUS.lock().unwrap();
+        let mut i2c = I2C_BUS.lock();
 
         // Linux I2C gebruikt 7-bit adressen
         let addr_7bit = (address & 0x7f) as u8;
@@ -96,7 +99,7 @@ impl wasi::i2c::i2c::HostI2c for HostState {
     fn drop(
         &mut self,
         rep: Resource<wasi::i2c::i2c::I2c>
-    ) -> std::result::Result<(), wasmtime::Error> {
+    ) -> core::result::Result<(), wasmtime::Error> {
         self.i2c_devices.remove(&rep.rep());
         Ok(())
     }

@@ -19,7 +19,6 @@ crate-type = ["lib"]
 debug = true
 
 [profile.release]
-debug = true
 opt-level = "z"
 lto = true
 codegen-units = 1

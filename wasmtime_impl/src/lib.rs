@@ -1,6 +1,7 @@
+#![no_std]
 use wasmtime::component::{ Component, HasSelf, Linker };
 use wasmtime::{ Config, Engine, Store };
-use std::sync::{ LazyLock, Mutex };
+use spin::{ Lazy, Mutex };
 use linux_embedded_hal::I2cdev;
 
 use anyhow::Result;
@@ -10,7 +11,7 @@ mod wasmtime_manager;
 
 use wasmtime_manager::HostState;
 
-static I2C_BUS: LazyLock<Mutex<I2cdev>> = LazyLock::new(|| {
+static I2C_BUS: Lazy<Mutex<I2cdev>> = Lazy::new(|| {
     Mutex::new(I2cdev::new("/dev/i2c-1").unwrap())
 });
 
@@ -32,7 +33,8 @@ impl PingPongRunner {
 
         let mut store = Store::new(&engine, HostState::new());
 
-        let component = Component::from_file(&engine, "wasmodules/guestp2.wasm")?;
+        const WASM_BYTES: &[u8] = include_bytes!("../wasmodules/guestp2.wasm");
+        let component = Component::new(&engine, WASM_BYTES).unwrap();
 
         let mut linker = Linker::new(&engine);
 

@@ -1,3 +1,4 @@
+#![no_std]
 use wasmtime_impl::PingPongRunner;
 
 // Main functie
