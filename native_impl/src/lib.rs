@@ -1,3 +1,4 @@
+#![no_std]
 use embedded_hal::i2c::I2c;
 use linux_embedded_hal::{ I2cdev };
 pub fn setup() -> I2cdev {
