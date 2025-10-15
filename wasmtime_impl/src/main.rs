@@ -2,6 +2,6 @@ use wasmtime_impl::PingPongRunner;
 
 // Main functie
 fn main() {
-    let mut runner = PingPongRunner::new().unwrap();
-    runner.pingpong();
+    println!("run,type,time");
+    PingPongRunner::new().unwrap().bench_guest();
 }

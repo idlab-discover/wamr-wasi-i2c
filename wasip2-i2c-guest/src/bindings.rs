@@ -21,18 +21,27 @@ pub fn get_i2c_bus() -> I2c {
 }
 #[doc(hidden)]
 #[allow(non_snake_case)]
+pub unsafe fn _export_setup_cabi<T: Guest>() {
+    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+    T::setup();
+}
+#[doc(hidden)]
+#[allow(non_snake_case)]
 pub unsafe fn _export_run_cabi<T: Guest>() {
     #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
     T::run();
 }
 pub trait Guest {
+    fn setup() -> ();
     fn run() -> ();
 }
 #[doc(hidden)]
 macro_rules! __export_world_pingpong_cabi {
     ($ty:ident with_types_in $($path_to_types:tt)*) => {
-        const _ : () = { #[unsafe (export_name = "run")] unsafe extern "C" fn
-        export_run() { unsafe { $($path_to_types)*:: _export_run_cabi::<$ty > () } } };
+        const _ : () = { #[unsafe (export_name = "setup")] unsafe extern "C" fn
+        export_setup() { unsafe { $($path_to_types)*:: _export_setup_cabi::<$ty > () } }
+        #[unsafe (export_name = "run")] unsafe extern "C" fn export_run() { unsafe {
+        $($path_to_types)*:: _export_run_cabi::<$ty > () } } };
     };
 }
 #[doc(hidden)]
@@ -548,19 +557,19 @@ pub(crate) use __export_pingpong_impl as export;
 )]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 497] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf2\x02\x01A\x02\x01\
-A\x09\x01B\x0f\x01{\x04\0\x07address\x03\0\0\x01m\x03\x07address\x04data\x07unkn\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 507] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xfc\x02\x01A\x02\x01\
+A\x0a\x01B\x0f\x01{\x04\0\x07address\x03\0\0\x01m\x03\x07address\x04data\x07unkn\
 own\x04\0\x15no-acknowledge-source\x03\0\x02\x01q\x05\x03bus\0\0\x10arbitration-\
 loss\0\0\x0eno-acknowledge\x01\x03\0\x07overrun\0\0\x05other\0\0\x04\0\x0aerror-\
 code\x03\0\x04\x04\0\x03i2c\x03\x01\x01h\x06\x01p}\x01j\x01\x08\x01\x05\x01@\x03\
 \x04self\x07\x07address\x01\x03lenw\0\x09\x04\0\x10[method]i2c.read\x01\x0a\x01j\
 \0\x01\x05\x01@\x03\x04self\x07\x07address\x01\x04data\x08\0\x0b\x04\0\x11[metho\
 d]i2c.write\x01\x0c\x03\0\x0cwasi:i2c/i2c\x05\0\x02\x03\0\0\x03i2c\x03\0\x03i2c\x03\
-\0\x01\x01i\x02\x01@\0\0\x03\x03\0\x0bget-i2c-bus\x01\x04\x01@\0\x01\0\x04\0\x03\
-run\x01\x05\x04\0\x14my:pingpong/pingpong\x04\0\x0b\x0e\x01\0\x08pingpong\x03\0\0\
-\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.227.1\x10wit-bind\
-gen-rust\x060.41.0";
+\0\x01\x01i\x02\x01@\0\0\x03\x03\0\x0bget-i2c-bus\x01\x04\x01@\0\x01\0\x04\0\x05\
+setup\x01\x05\x04\0\x03run\x01\x05\x04\0\x14my:pingpong/pingpong\x04\0\x0b\x0e\x01\
+\0\x08pingpong\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
+0.227.1\x10wit-bindgen-rust\x060.41.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {

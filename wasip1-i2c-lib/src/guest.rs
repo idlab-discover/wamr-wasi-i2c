@@ -13,6 +13,7 @@ unsafe extern "C" {
 }
 
 #[repr(transparent)]
+#[derive(Default)]
 pub struct I2cResource {
     // TODO: Resources worden eigenlijk nog niet correct behandeld
     //      - We moeten nog checken op terug vrijkomen van resources
@@ -22,21 +23,29 @@ pub struct I2cResource {
 }
 
 impl I2cResource {
-    pub fn new() -> Self {
-        Self { handle: unsafe { host_open() } }
+    pub const fn new() -> Self {
+        Self {
+            // handle: unsafe { host_open() },
+            handle: 0,
+        }
     }
 
     pub fn read(
         &self,
         address: I2cAddress,
-        len: usize
+        len: usize,
     ) -> Result<alloc_crate::vec::Vec<u8>, ErrorCode> {
         pub use alloc_crate::vec::Vec;
         let mut read_buffer: Vec<core::mem::MaybeUninit<u8>> = Vec::with_capacity(len as usize);
 
         let host_res = unsafe {
             read_buffer.set_len(len as usize);
-            host_read(self.handle, address, len, read_buffer.as_mut_ptr() as *mut u8)
+            host_read(
+                self.handle,
+                address,
+                len,
+                read_buffer.as_mut_ptr() as *mut u8,
+            )
         };
 
         let output = match ErrorCode::lift(host_res) {

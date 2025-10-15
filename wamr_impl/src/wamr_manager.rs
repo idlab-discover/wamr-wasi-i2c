@@ -1,14 +1,10 @@
-use std::{ ffi::c_void, path::PathBuf };
+use std::{ffi::c_void, path::PathBuf};
 use wamr_rust_sdk::{
-    function::Function,
-    instance::Instance,
-    module::Module,
-    runtime::Runtime,
-    value::WasmValue,
-    RuntimeError,
+    RuntimeError, function::Function, instance::Instance, module::Module, runtime::Runtime,
+    value::WasmValue, wasi_context::WasiCtx,
 };
 
-use crate::{ host_functions, permission_manager::I2C_PERMISSIONS_MANAGER };
+use crate::{host_functions, permission_manager::I2C_PERMISSIONS_MANAGER};
 
 // Moet in deze volgorde staan. Rust dropt variabelen in declaratievolgorde = FIFO bij structs, in een functie gebeurd dit omgekeerd: LIFO
 // WAMR heeft weird behaviour wanneer de volgorde omgedraaid is
@@ -34,9 +30,17 @@ impl PingPongRunner {
         let mut path_buffer = PathBuf::from(".");
         path_buffer.push("wasmodules");
         path_buffer.push("guestp1.wasm");
-        let module = Module::from_file(&runtime, path_buffer.as_path())?;
+
+        let wasi_ctx = WasiCtx::default();
+        let mut module = Module::from_file(&runtime, path_buffer.as_path())?;
+        module.set_wasi_context(wasi_ctx);
+
         let instance = Instance::new(&runtime, &module, 1024 * 64)?;
         let func = Function::find_export_func(&instance, "_start")?;
+        // let func = Function::find_export_func(&instance, "execute")?;
+
+        // let _ = Function::find_export_func(&instance, "setup")?
+        //     .call(&instance, &vec![] as &Vec<WasmValue>);
         Ok(PingPongRunner {
             _runtime: runtime,
             _module: module,
@@ -49,10 +53,21 @@ impl PingPongRunner {
         let params: Vec<WasmValue> = vec![];
         self.func.call(&self.instance, &params).unwrap();
     }
+
+    pub fn bench_guest(&self) {
+        let params: Vec<WasmValue> = vec![];
+
+        for _ in 0..1000 {
+            self.func.call(&self.instance, &params).unwrap();
+        }
+    }
 }
 
 impl Drop for PingPongRunner {
     fn drop(&mut self) {
-        I2C_PERMISSIONS_MANAGER.lock().unwrap().close_instance(self.instance.get_inner_instance());
+        I2C_PERMISSIONS_MANAGER
+            .lock()
+            .unwrap()
+            .close_instance(self.instance.get_inner_instance());
     }
 }

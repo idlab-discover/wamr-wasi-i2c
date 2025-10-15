@@ -1,6 +1,6 @@
 use wasmtime::component::*;
 
 bindgen!({
-	world: "pingpong",
-	path: "../wit"
+    world: "pingpong",
+    path: "../wit",
 });

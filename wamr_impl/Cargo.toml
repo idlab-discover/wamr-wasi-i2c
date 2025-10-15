@@ -17,7 +17,7 @@ crate-type = ["lib"]
 debug = true
 
 [profile.release]
-debug = true
+# debug = true
 
 [profile.dev]
 debug = true

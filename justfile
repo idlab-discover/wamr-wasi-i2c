@@ -1,8 +1,9 @@
-scp := "scp.exe"
-ssh := "ssh.exe"
-host_addr := env_var_or_default("PI_HOST", "wasmpi.local")
-user := env_var_or_default("PI_USER", "robin")
-pi_arch := env_var_or_default("PI_ARCH", "aarch64-unknown-linux-musl")
+scp := "scp"
+ssh := "ssh"
+host_addr := env_var_or_default("PI_HOST", "192.168.0.249")
+user := env_var_or_default("PI_USER", "pi")
+pass := env_var_or_default("PI_PASS", "pi")
+pi_arch := env_var_or_default("PI_ARCH", "aarch64-unknown-linux-gnu")
 
 default:
     @just --list
@@ -52,7 +53,8 @@ hosts: (native) (wamr) (wasmtime)
 [group('Creation: Host')]
 bench: (build-p1) (build-p2)
 	mkdir -p "./target/benches"
-	cd "benchall" && cargo build --all-targets --release --target {{pi_arch}} --features dhat-pingpong,dhat-runtime
+	# cd "benchall" && cargo build --all-targets --release --target {{pi_arch}} --features dhat-pingpong,dhat-runtime
+	cd "benchall" && cargo build --benches --release --target {{pi_arch}}
 	find "benchall/target/{{pi_arch}}/release/deps/" -type f -executable -name "bench*" -exec cp "{}" ./target/benches/ \;
 	find "benchall/target/{{pi_arch}}/release/" -maxdepth 1 -type f -executable -name "bench*" -exec cp "{}" ./target/ \;
 
@@ -76,11 +78,15 @@ all: (bench) (wasmtime) (wamr) (pingpong) (flamegraph)
 # Deploy all the previously compiled host binaries and WASM Guests to the PI and make them executable
 [group('Other')]
 deploy:
-	{{scp}} -r "./target/" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/masterproef/
-	-{{ssh}} "{{user}}"@"{{host_addr}}" 'find ./masterproef/target/ -type f -exec chmod +x "{}" +'
+	{{scp}} -r "./target/" "{{user}}"@"{{host_addr}}":/home/"{{user}}"/
+	-{{ssh}} "{{user}}"@"{{host_addr}}" 'find ./target/ -type f -exec chmod +x "{}" +'
 
 
-
+[group('Other')]
+run:
+  sshpass -p {{pass}} ssh {{user}}"@"{{host_addr}} "cd target; ./hostn 2>&1" | tee results/native.csv
+  sshpass -p {{pass}} ssh {{user}}"@"{{host_addr}} "cd target; ./hostp1 2>&1" | tee results/wamr.csv
+  sshpass -p {{pass}} ssh {{user}}"@"{{host_addr}} "cd target; ./hostp2 2>&1" | tee results/wasmtime.csv
 
 # Cargo clean all the different projects
 [group('Other')]

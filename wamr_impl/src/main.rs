@@ -1,5 +1,6 @@
-use wamr_impl::{ PingPongRunner };
+use wamr_impl::PingPongRunner;
 
 fn main() {
-    PingPongRunner::new().unwrap().pingpong();
+    println!("run,type,time");
+    PingPongRunner::new().unwrap().bench_guest();
 }

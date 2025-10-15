@@ -6,5 +6,6 @@ world pingpong {
 
 	import get-i2c-bus: func() -> i2c;
 
+  export setup: func();
 	export run: func();
 }
